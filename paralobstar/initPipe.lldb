@@ -1,0 +1,10 @@
+file bin/runner
+
+# Setting breakpoints
+#b Tree.cpp:1722
+#b Tree.cpp:118
+#br dis 1
+#br dis 2
+#b Renderer.cpp:117
+
+run

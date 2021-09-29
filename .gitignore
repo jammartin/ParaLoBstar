@@ -27,6 +27,16 @@
 *.lib
 
 # Executables
+bin/
 *.exe
 *.out
 *.app
+
+# CLion project
+.idea/
+
+# output
+*.h5
+output/
+
+
