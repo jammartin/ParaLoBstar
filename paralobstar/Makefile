@@ -1,7 +1,6 @@
 # Set compiler
-CXX := g++
+CXX := mpic++
 
-# example program utilizing all modules
 TRGTDIR := bin
 TARGET := paralobstar
 

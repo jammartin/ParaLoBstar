@@ -16,7 +16,7 @@ void Particle::force(Particle &p){
 }
 
 void Particle::updateX(double dt){
-    double a = dt * .5 / m;
+    double a = .5 * dt / m;
     for (int d=0; d<global::dim; ++d){
         x[d] += dt * (v[d] + a * F[d]);
         Fn[d] = F[d];
@@ -24,7 +24,7 @@ void Particle::updateX(double dt){
 }
 
 void Particle::updateV(double dt){
-    double a = dt * .5 / m;
+    double a = .5 * dt / m;
     for (int d=0; d<global::dim; ++d){
         v[d] += a * (F[d] + Fn[d]);
     }

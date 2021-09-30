@@ -51,18 +51,18 @@ void DomainTree::compPseudoParticles(TreeNode &t){
     }
     if (!t.isLeaf()){ // t.p is a pseudo-particle
         t.p.m = 0;
-        for (int d=0; d>global::dim; ++d){
+        for (int d=0; d<global::dim; ++d){
             t.p.x[d] = 0;
         }
-        for (int j=0; j<global::powdim; ++j){
-            if (t.son[j] != nullptr){
-                t.p.m += t.son[j]->p.m;
-                for (int d=0; d>global::dim; ++d){
-                    t.p.x[d] += t.son[j]->p.m * t.son[j]->p.x[d];
+        for (int i=0; i<global::powdim; ++i){
+            if (t.son[i] != nullptr){
+                t.p.m += t.son[i]->p.m;
+                for (int d=0; d<global::dim; ++d){
+                    t.p.x[d] += t.son[i]->p.m * t.son[i]->p.x[d];
                 }
             }
         }
-        for (int d=0; d>global::dim; ++d){
+        for (int d=0; d<global::dim; ++d){
             t.p.x[d] = t.p.x[d] / t.p.m;
         }
     }
@@ -83,7 +83,7 @@ void DomainTree::compForce(TreeNode &t){
         for (int d=0; d<global::dim; ++d){
             t.p.F[d] = 0.;
         }
-        forceBH(t, t, root.box.getLength());
+        forceBH(t, root, root.box.getLength());
     }
 }
 
@@ -98,7 +98,9 @@ void DomainTree::forceBH(TreeNode &leaf, TreeNode &t, double l){
             leaf.p.force(t.p);
         } else {
             for (int i=0; i<global::powdim; ++i){
-                forceBH(leaf, *t.son[i], .5 * l);
+                if (t.son[i] != nullptr){
+                    forceBH(leaf, *t.son[i], .5 * l);
+                }
             }
         }
     }
@@ -164,6 +166,7 @@ void DomainTree::moveLeaves(TreeNode &t){
                 t.p.toDelete = true;
             } else {
                 Logger(DEBUG) << "\t\tParticle left system.";
+                t.p.toDelete = true;
             }
         }
     }

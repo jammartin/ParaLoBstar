@@ -51,14 +51,17 @@ void BarnesHut::run(){
     int step = 0;
     while (t <= timeEnd){
         if (step % h5DumpInterval == 0){
-            Logger(INFO) << "\tDumping particles to h5 ...";
+            Logger(INFO) << "Dumping particles to h5 ...";
             // containers for particle data
             std::vector<double> m {};
             std::vector<std::vector<double>> x {};
             std::vector<std::vector<double>> v {};
             std::vector<keytype> k {};
             std::vector<keytype> ranges { 0UL, DomainTree::keyMax };
+
+            Logger(DEBUG) << "\t... collecting particle data ...";
             N = tree->getParticleData(m, x, v, k);
+            Logger(DEBUG) << "\t... done. Writing " << N << " particles to file ...";
 
             std::stringstream stepss;
             stepss << std::setw(6) << std::setfill('0') << step;
@@ -76,9 +79,10 @@ void BarnesHut::run(){
             vDataSet.write(v);
             kDataSet.write(k);
             rangesDataSet.write(ranges);
-            Logger(INFO) << "\t... done.";
+            Logger(INFO) << "... done.";
         }
         if (t == timeEnd){
+            Logger(INFO) << "Finished!";
             break;
         }
         t += timeStep;
