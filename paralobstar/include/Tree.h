@@ -32,6 +32,8 @@ public:
                                 std::vector<std::vector<double>> &v,
                                 std::vector<keytype> &k) = 0;
 
+    int countParticles();
+
 protected:
     TreeNode root {};
     double theta;
@@ -39,6 +41,7 @@ protected:
 
 private:
     void deallocate(TreeNode &t);
+    void countParticles(TreeNode &t, int &N);
 };
 
 

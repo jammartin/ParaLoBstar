@@ -22,3 +22,18 @@ void Tree::deallocate(TreeNode &t){
         }
     }
 }
+
+int Tree::countParticles(){
+    int N_ = 0;
+    countParticles(root, N_);
+    return N_;
+}
+
+void Tree::countParticles(TreeNode &t, int &N){
+    for (int i=0; i<global::powdim; ++i){
+        if (t.son[i] != nullptr){
+            countParticles(*t.son[i], N);
+        }
+    }
+    if (t.isLeaf() && t.type == NodeType::particle) ++N;
+}

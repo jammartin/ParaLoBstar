@@ -18,7 +18,7 @@ public:
     Particle p {};
     Box box {};
     TreeNode *son[global::powdim];
-    NodeType type {};
+    NodeType type { NodeType::particle };
 
     TreeNode();
 

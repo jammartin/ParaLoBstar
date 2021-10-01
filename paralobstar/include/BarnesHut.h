@@ -9,13 +9,14 @@
 
 #include "Logger.h"
 #include "ConfigParser.h"
+#include "H5Profiler.h"
 #include "InitialDistribution.h"
 #include "Particle.h"
 #include "DomainTree.h"
 
 class BarnesHut {
 public:
-    BarnesHut(ConfigParser confP);
+    BarnesHut(ConfigParser confP, int _myRank, int _numProcs);
     ~BarnesHut();
 
     void run();
@@ -30,6 +31,13 @@ private:
     double theta {};
     int h5DumpInterval {};
     int loadBalancingInterval {};
+
+    // mpi related variables
+    int myRank {};
+    int numProcs {};
+
+    // storing reference to singleton profiler instance
+    H5Profiler &profiler = H5Profiler::getInstance();
 
     // internal variables initialized in constructor
     int N; // number of particles

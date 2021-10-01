@@ -4,13 +4,15 @@
 
 #include "../include/BarnesHut.h"
 
-BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("domainSize") },
-                                           initFile { confP.getVal<std::string>("initFile") },
-                                           parallel { confP.getVal<bool>("parallel") },
-                                           timeStep { confP.getVal<double>("timeStep") },
-                                           timeEnd { confP.getVal<double>("timeEnd") },
-                                           h5DumpInterval { confP.getVal<int>("h5DumpInterval") },
-                                           loadBalancingInterval { confP.getVal<int>("loadBalancingInterval") }
+BarnesHut::BarnesHut(ConfigParser confP,
+                     int _myRank, int _numProcs) : domainSize { confP.getVal<double>("domainSize") },
+                                                   initFile { confP.getVal<std::string>("initFile") },
+                                                   parallel { confP.getVal<bool>("parallel") },
+                                                   timeStep { confP.getVal<double>("timeStep") },
+                                                   timeEnd { confP.getVal<double>("timeEnd") },
+                                                   h5DumpInterval { confP.getVal<int>("h5DumpInterval") },
+                                                   loadBalancingInterval { confP.getVal<int>("loadBalancingInterval") },
+                                                   myRank { _myRank }, numProcs { _numProcs }
 {
     Logger(INFO) << "Reading in initial distribution ...";
     InitialDistribution initDist { initFile };
@@ -21,10 +23,24 @@ BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("do
 
     Logger(INFO) << "... done. Number of particles N = " << N;
 
-    // TODO: implement parallel case
-    //tree = parallel ? SubDomainTree() : DomainTree();
+    int steps = (int)round(timeEnd/timeStep);
 
-    tree = new DomainTree(domainSize,confP.getVal<double>("theta"), timeStep);
+    if (parallel){
+        //TODO: Implement
+    } else if (numProcs == 1){
+        // initialize profiler data sets
+        profiler.createValueDataSet<int>(ProfilerIds::N, steps);
+        profiler.createTimeDataSet(ProfilerIds::timePos, steps);
+        profiler.createTimeDataSet(ProfilerIds::timeMove, steps);
+        profiler.createTimeDataSet(ProfilerIds::timePseudo, steps);
+        profiler.createTimeDataSet(ProfilerIds::timeForce, steps);
+        profiler.createTimeDataSet(ProfilerIds::timeVel, steps);
+
+        tree = new DomainTree(domainSize,confP.getVal<double>("theta"), timeStep);
+    } else {
+        Logger(ERROR) << "Serial execution with more than one process is not possible. Aborting.";
+        exit(0);
+    }
 
     Logger(INFO) << "Insertion particles into tree ...";
 
@@ -85,17 +101,36 @@ void BarnesHut::run(){
             Logger(INFO) << "Finished!";
             break;
         }
+
+        profiler.setStep(step);
         t += timeStep;
         ++step;
+
         Logger(INFO) << "Timestep t = " << t << " ...";
         Logger(DEBUG) << "\tComputing positions and updating tree ...";
+        profiler.time(ProfilerIds::timePos);
         tree->compPosition();
+        profiler.time2file(ProfilerIds::timePos);
+
+        profiler.time(ProfilerIds::timeMove);
         tree->moveParticles();
-        Logger(DEBUG) << "\t... computing pseudo-particles and forces ...";
+        profiler.time2file(ProfilerIds::timeMove);
+
+        profiler.time(ProfilerIds::timePseudo);
         tree->compPseudoParticles();
+        profiler.time2file(ProfilerIds::timePseudo);
+
+        Logger(DEBUG) << "\t... computing forces ...";
+        profiler.time(ProfilerIds::timeForce);
         tree->compForce();
+        profiler.time2file(ProfilerIds::timeForce);
+
         Logger(DEBUG) << "\t... computing velocities ...";
+        profiler.time(ProfilerIds::timeVel);
         tree->compVelocity();
+        profiler.time2file(ProfilerIds::timeVel);
         Logger(INFO) << "... done.";
+        
+        profiler.value2file(ProfilerIds::N, tree->countParticles());
     }
 }

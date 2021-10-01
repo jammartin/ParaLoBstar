@@ -2,8 +2,8 @@ domainSize 10.
 initFile ../N100000seed1885245432.h5
 parallel false
 timeStep .001
-timeEnd 5.
+timeEnd .1
 theta .6
 h5DumpInterval 50
 loadBalancingInterval 10
-outputRank 3
+outputRank 0

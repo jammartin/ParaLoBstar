@@ -54,7 +54,7 @@ enum typelog {
 struct structlog {
     bool headers = false;
     typelog level = WARN;
-    int myrank = -1; // don't use MPI by default
+    int myRank = -1; // don't use MPI by default
     int outputRank = -1;
 };
 
@@ -67,7 +67,7 @@ public:
     ~Logger();
 
     template<class T> Logger &operator<<(const T &msg) {
-        if (msglevel >= LOGCFG.level && (LOGCFG.myrank == LOGCFG.outputRank || LOGCFG.outputRank == -1)) {
+        if (msglevel >= LOGCFG.level && (LOGCFG.myRank == LOGCFG.outputRank || LOGCFG.outputRank == -1)) {
             std::cout << msg;
             opened = true;
         }
@@ -76,7 +76,7 @@ public:
 
     Logger &operator<<(const unsigned long &key) {
         int level = 21;
-        if (msglevel >= LOGCFG.level && (LOGCFG.myrank == LOGCFG.outputRank || LOGCFG.outputRank == -1)) {
+        if (msglevel >= LOGCFG.level && (LOGCFG.myRank == LOGCFG.outputRank || LOGCFG.outputRank == -1)) {
             int levels [level];
             for (int i = 0; i<level; i++) {
                 levels[i] = (key >> 3*i) & (unsigned long)7;

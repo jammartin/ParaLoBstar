@@ -208,9 +208,9 @@ int DomainTree::getParticleData(std::vector<double> &m,
                                 std::vector<std::vector<double>> &x,
                                 std::vector<std::vector<double>> &v,
                                 std::vector<keytype> &k){
-    int N = 0;
-    getParticleData(root, m, x, v, k, N);
-    return N;
+    int N_ = 0;
+    getParticleData(root, m, x, v, k, N_);
+    return N_;
 }
 
 void DomainTree::getParticleData(TreeNode &t, std::vector<double> &m,
