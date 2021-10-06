@@ -18,8 +18,8 @@ public:
 
 private:
     // containers to be filled from hdf5 file
-    double m {}; //TODO: make this a vector
-    std::vector<std::vector<double>> x, v {};
+    std::vector<double> m {};
+    std::vector<std::vector<double>> x {}, v {};
     int numberOfParticles { 0 };
 };
 

@@ -29,6 +29,7 @@ BarnesHut::BarnesHut(ConfigParser confP,
         //TODO: Implement
     } else if (numProcs == 1){
         // initialize profiler data sets
+        //TODO: move out of if
         profiler.createValueDataSet<int>(ProfilerIds::N, steps);
         profiler.createTimeDataSet(ProfilerIds::timePos, steps);
         profiler.createTimeDataSet(ProfilerIds::timeMove, steps);
@@ -130,7 +131,7 @@ void BarnesHut::run(){
         tree->compVelocity();
         profiler.time2file(ProfilerIds::timeVel);
         Logger(INFO) << "... done.";
-        
+
         profiler.value2file(ProfilerIds::N, tree->countParticles());
     }
 }

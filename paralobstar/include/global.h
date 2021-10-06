@@ -8,6 +8,7 @@
 namespace global {
     constexpr int dim { 3 };
     constexpr int powdim { 1 << dim }; // 2^dim
+    constexpr int maxTreeLvl { 64/dim }; // using 64-bit key
     constexpr double G { 1. }; // gravitational constant
 }
 

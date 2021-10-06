@@ -11,6 +11,7 @@
 
 class Particle {
 public:
+    //TODO: implement overloaded constructor
     double m { -1. }; // mass
     double x[global::dim] {}; // position
     double v[global::dim] {}; // velocity
