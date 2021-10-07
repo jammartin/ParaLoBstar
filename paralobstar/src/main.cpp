@@ -2,7 +2,7 @@
 // Created by Johannes Martin on 17.09.21.
 //
 
-#include <mpi.h>
+#include <boost/mpi.hpp>
 
 // header only libraries
 #include <cxxopts.hpp>
@@ -16,11 +16,12 @@ structlog LOGCFG = {};
 
 int main(int argc, char *argv[]){
 
-    MPI_Init(&argc, &argv);
+    boost::mpi::environment env { argc, argv };
+    boost::mpi::communicator comm;
 
-    int myRank, numProcs;
-    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-    MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
+    int myRank { comm.rank() };
+    int numProcs { comm.size() };
+
 
     cxxopts::Options cmdLineOptions { "paralobstar",
                                       "Run parallel load balanced N-body simulations via the Barnes-Hut method." };
@@ -45,8 +46,7 @@ int main(int argc, char *argv[]){
 
     BarnesHut algorithm { configParser, myRank, numProcs };
 
-    algorithm.run();
+    //algorithm.run();
 
-    MPI_Finalize();
     return 0;
 }

@@ -5,26 +5,24 @@
 #ifndef PARALOBSTAR_DOMAINTREE_H
 #define PARALOBSTAR_DOMAINTREE_H
 
-#include "Logger.h"
 #include "Tree.h"
 
 class DomainTree : public Tree {
 public:
     DomainTree(double domainSize, double theta, double timeStep);
 
-    void insertParticle(Particle &p);
-    void compPseudoParticles();
-    void compForce();
-    void compPosition();
-    void compVelocity();
-    void moveParticles();
+    void compPseudoParticles() override;
+    void compForce() override;
+    void compPosition() override;
+    void compVelocity() override;
+    void moveParticles() override;
     int getParticleData(std::vector<double> &m,
                         std::vector<std::vector<double>> &x,
                         std::vector<std::vector<double>> &v,
-                        std::vector<keytype> &k);
+                        std::vector<keytype> &k) override;
 
 private:
-    void insertParticle(Particle &p, TreeNode &t);
+    void insertParticle(Particle &p, TreeNode &t) override;
     void compPseudoParticles(TreeNode &t);
     void compForce(TreeNode &t);
     void forceBH(TreeNode &leaf, TreeNode &t, double l);

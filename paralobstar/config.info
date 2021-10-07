@@ -1,9 +1,9 @@
-domainSize 50.
-initFile ../plummerN10000seed243902845.h5
-parallel false
+domainSize 10.
+initFile ../single_spiralN10000seed3642423265.h5
+parallel true
 timeStep .001
 timeEnd 1.
 theta .6
 h5DumpInterval 50
 loadBalancingInterval 10
-outputRank 0
+outputRank -1

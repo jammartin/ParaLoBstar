@@ -24,9 +24,9 @@ OBJECTS := $(SOURCES:$(SRCDIR)/%.$(SRCEXT)=$(OBJDIR)/%.$(OBJEXT))
 MAIN := main
 
 # setting general flags
-CXXFLAGS := -std=c++11 -I$(INCLDIR)
+CXXFLAGS := -std=c++11 -I$(INCLDIR) -I/usr/include/hdf5/openmpi
 # setting linker flags
-LDFLAGS := -lhdf5 -lboost_filesystem
+LDFLAGS := -std=c++11 -lhdf5 -lboost_filesystem -lboost_mpi
 
 # get kernel name to be able to run sed correctly on Darwin (MacOS) or Linux kernels
 KERNEL := $(shell uname -s)

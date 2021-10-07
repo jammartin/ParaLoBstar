@@ -4,25 +4,7 @@
 
 #include "../include/DomainTree.h"
 
-DomainTree::DomainTree(double domainSize, double theta, double timeStep) : Tree(theta, timeStep){
-    for (int d=0; d<global::dim; ++d){
-        root.box.lower[d] = - .5 * domainSize;
-        root.box.upper[d] = .5 * domainSize;
-    }
-}
-
-void DomainTree::insertParticle(Particle &p){
-    if (root.box.particleWithin(p)){
-        if (root.isEmpty()){
-            root.p = p;
-        } else {
-            insertParticle(p, root);
-        }
-    } else {
-        Logger(WARN) << "insertTree(): Particle not within domain. x = ("
-                     << p.x[0] << ", " << p.x[1] << ", " << p.x[2] << ")";
-    }
-}
+DomainTree::DomainTree(double domainSize, double theta, double timeStep) : Tree(domainSize, theta, timeStep){}
 
 void DomainTree::insertParticle(Particle &p, TreeNode &t){
     Box sonBox {};
@@ -167,7 +149,7 @@ void DomainTree::moveLeaves(TreeNode &t){
         t.p.moved = true;
         if (!t.box.particleWithin(t.p)){
             if (root.box.particleWithin(t.p)){
-                insertParticle(t.p);
+                insertParticle(t.p, root);
                 t.p.toDelete = true;
             } else {
                 Logger(DEBUG) << "\t\tmoveLeaves(): Particle left system. x = ("

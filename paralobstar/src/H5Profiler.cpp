@@ -5,9 +5,8 @@
 #include "../include/H5Profiler.h"
 
 H5Profiler::H5Profiler(const std::string& outfile, int _myRank, int _numProcs) :
-    h5file { HighFive::File(outfile,
-                            HighFive::File::ReadWrite | HighFive::File::Create | HighFive::File::Truncate,
-                            HighFive::MPIOFileDriver(MPI_COMM_WORLD, MPI_INFO_NULL)) },
+    h5file { outfile,HighFive::File::ReadWrite | HighFive::File::Create | HighFive::File::Truncate,
+             HighFive::MPIOFileDriver(MPI_COMM_WORLD, MPI_INFO_NULL) },
     myRank { _myRank }, numProcs { _numProcs }, step { 0 }, disabled { false }
 {
     Logger(DEBUG) << "H5Profiler instance created (Singleton)";

@@ -14,7 +14,8 @@ public:
     InitialDistribution(const std::string &file);
 
     int getNumberOfParticles() const { return numberOfParticles; };
-    void getParticles(Particle *&particles);
+    void getAllParticles(Particle *&particles);
+    void getParticles(Particle *&particles, int offset, int amount);
 
 private:
     // containers to be filled from hdf5 file

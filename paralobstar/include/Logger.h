@@ -74,7 +74,7 @@ public:
         return *this;
     }
 
-    Logger &operator<<(const unsigned long &key) {
+    Logger &operator<<(const std::uint_fast64_t &key) {
         int level = global::maxTreeLvl;
         if (msglevel >= LOGCFG.level && (LOGCFG.myRank == LOGCFG.outputRank || LOGCFG.outputRank == -1)) {
             int levels [level];

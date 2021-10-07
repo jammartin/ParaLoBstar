@@ -13,6 +13,7 @@
 #include "InitialDistribution.h"
 #include "Particle.h"
 #include "DomainTree.h"
+#include "SubDomainTree.h"
 
 class BarnesHut {
 public:

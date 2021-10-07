@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "TreeNode.h"
+#include "Logger.h"
 
 typedef std::uint_fast64_t keytype;
 
@@ -18,10 +19,9 @@ class Tree {
 public:
     static constexpr keytype keyMax { std::numeric_limits<keytype>::max() };
 
-    Tree(double _theta, double _timeStep);
+    Tree(double domainSize, double _theta, double _timeStep);
     virtual ~Tree();
 
-    virtual void insertParticle(Particle &p) = 0; // implemented by child class
     virtual void compPseudoParticles() = 0;
     virtual void compForce() = 0;
     virtual void compPosition() = 0;
@@ -32,7 +32,10 @@ public:
                                 std::vector<std::vector<double>> &v,
                                 std::vector<keytype> &k) = 0;
 
+    virtual void insertParticle(Particle &p) final;
     int countParticles();
+
+    virtual void guessRanges(){}
 
 protected:
     TreeNode root {};
@@ -40,8 +43,9 @@ protected:
     double timeStep;
 
 private:
-    void deallocate(TreeNode &t);
+    virtual void insertParticle(Particle &p, TreeNode &t) = 0;
     void countParticles(TreeNode &t, int &N);
+    void deallocate(TreeNode &t);
 };
 
 

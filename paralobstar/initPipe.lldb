@@ -1,10 +1,7 @@
-file bin/runner
+file bin/paralobstar
 
 # Setting breakpoints
-#b Tree.cpp:1722
-#b Tree.cpp:118
+b BarneHut.cpp:59
 #br dis 1
-#br dis 2
-#b Renderer.cpp:117
 
 run

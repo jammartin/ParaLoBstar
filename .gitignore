@@ -37,6 +37,7 @@ bin/
 
 # output
 *.h5
+*.mp4
 output/
 
 
