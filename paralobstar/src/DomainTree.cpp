@@ -37,9 +37,9 @@ void DomainTree::compPseudoParticles(TreeNode &t){
         }
     }
     if (!t.isLeaf()){ // t.p is a pseudo-particle
-        t.p.m = 0;
+        t.p.m = 0.;
         for (int d=0; d<global::dim; ++d){
-            t.p.x[d] = 0;
+            t.p.x[d] = 0.;
         }
         for (int i=0; i<global::powdim; ++i){
             if (t.son[i] != nullptr){
@@ -71,25 +71,6 @@ void DomainTree::compForce(TreeNode &t){
             t.p.F[d] = 0.;
         }
         forceBH(t, root, root.box.getLength());
-    }
-}
-
-void DomainTree::forceBH(TreeNode &leaf, TreeNode &t, double l){
-    if (&leaf != &t){
-        double distance = 0.;
-        for (int d=0; d<global::dim; ++d){
-            distance += pow(t.p.x[d] - leaf.p.x[d], 2.);
-        }
-        distance = sqrt(distance);
-        if (t.isLeaf() || l < theta * distance){
-            leaf.p.force(t.p);
-        } else {
-            for (int i=0; i<global::powdim; ++i){
-                if (t.son[i] != nullptr){
-                    forceBH(leaf, *t.son[i], .5 * l);
-                }
-            }
-        }
     }
 }
 

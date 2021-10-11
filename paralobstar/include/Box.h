@@ -14,8 +14,10 @@ public:
     double upper[global::dim] {};
 
     int sonBoxAndIndex(Box &sonBox, Particle &p);
+    void sonBoxByIndex(Box &sonBox, int sonIndex);
     double getLength();
     bool particleWithin(Particle &p);
+    double smallestDistance(Particle &p);
 };
 
 #endif //PARALOBSTAR_BOX_H

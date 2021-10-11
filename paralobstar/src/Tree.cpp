@@ -28,6 +28,25 @@ void Tree::insertParticle(Particle &p){
     }
 }
 
+void Tree::forceBH(TreeNode &leaf, TreeNode &t, double l){
+    if (&leaf != &t){
+        double distance = 0.;
+        for (int d=0; d<global::dim; ++d){
+            distance += pow(t.p.x[d] - leaf.p.x[d], 2.);
+        }
+        distance = sqrt(distance);
+        if (t.isLeaf() || l < theta * distance){
+            leaf.p.force(t.p);
+        } else {
+            for (int i=0; i<global::powdim; ++i){
+                if (t.son[i] != nullptr){
+                    forceBH(leaf, *t.son[i], .5 * l);
+                }
+            }
+        }
+    }
+}
+
 int Tree::countParticles(){
     int N_ = 0;
     countParticles(root, N_);
@@ -40,7 +59,12 @@ void Tree::countParticles(TreeNode &t, int &N){
             countParticles(*t.son[i], N);
         }
     }
-    if (t.isLeaf() && t.type == NodeType::particle) ++N;
+    if (t.type == NodeType::particle && t.isLeaf()) ++N;
+}
+
+std::vector<keytype> Tree::getRanges(){
+    std::vector<keytype> rangesVec_ { 0UL, keyMax };
+    return rangesVec_;
 }
 
 void Tree::deallocate(TreeNode &t){

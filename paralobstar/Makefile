@@ -26,7 +26,7 @@ MAIN := main
 # setting general flags
 CXXFLAGS := -std=c++11 -I$(INCLDIR) -I/usr/include/hdf5/openmpi
 # setting linker flags
-LDFLAGS := -std=c++11 -lhdf5 -lboost_filesystem -lboost_mpi
+LDFLAGS := -std=c++11 -lhdf5 -lboost_filesystem -lboost_mpi -lboost_serialization
 
 # get kernel name to be able to run sed correctly on Darwin (MacOS) or Linux kernels
 KERNEL := $(shell uname -s)

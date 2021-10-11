@@ -25,7 +25,6 @@ private:
     void insertParticle(Particle &p, TreeNode &t) override;
     void compPseudoParticles(TreeNode &t);
     void compForce(TreeNode &t);
-    void forceBH(TreeNode &leaf, TreeNode &t, double l);
     void compPosition(TreeNode &t);
     void compVelocity(TreeNode &t);
     void resetFlags(TreeNode &t);

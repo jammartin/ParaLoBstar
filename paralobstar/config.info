@@ -1,5 +1,5 @@
-domainSize 10.
-initFile ../single_spiralN10000seed3642423265.h5
+domainSize 50.
+initFile ../plummerN10000seed3777336863.h5
 parallel true
 timeStep .001
 timeEnd 1.

@@ -16,3 +16,14 @@ bool TreeNode::isLeaf(){
     }
     return true;
 }
+
+bool TreeNode::isCommonCoarseLeaf(){
+    if (type == NodeType::commonCoarse){
+        for (int i=0; i<global::powdim; ++i){
+            if (son[i] != nullptr && son[i]->type == NodeType::commonCoarse) return false;
+        }
+        return true;
+    } else {
+        return false;
+    }
+}

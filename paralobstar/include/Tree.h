@@ -17,8 +17,6 @@ typedef std::uint_fast64_t keytype;
 // abstract class
 class Tree {
 public:
-    static constexpr keytype keyMax { std::numeric_limits<keytype>::max() };
-
     Tree(double domainSize, double _theta, double _timeStep);
     virtual ~Tree();
 
@@ -34,13 +32,21 @@ public:
 
     virtual void insertParticle(Particle &p) final;
     int countParticles();
+    virtual std::vector<keytype> getRanges();
 
+    // placeholders for functions only implemented by SubDomainTree for the parallel mode
     virtual void guessRanges(){}
+    virtual void sendParticles(){}
+    virtual void buildCommonCoarseTree(){}
+
 
 protected:
+    static constexpr keytype keyMax { std::numeric_limits<keytype>::max() };
     TreeNode root {};
     double theta;
     double timeStep;
+
+    void forceBH(TreeNode &leaf, TreeNode &t, double l);
 
 private:
     virtual void insertParticle(Particle &p, TreeNode &t) = 0;

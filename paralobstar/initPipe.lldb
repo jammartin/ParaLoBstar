@@ -1,7 +1,8 @@
 file bin/paralobstar
 
 # Setting breakpoints
-b BarneHut.cpp:59
+#b BarnesHut.cpp:75
 #br dis 1
+#b SubDomainTree.cpp:153
 
-run
+run -v

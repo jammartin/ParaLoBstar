@@ -20,6 +20,20 @@ int Box::sonBoxAndIndex(Box &sonBox, Particle &p) {
     return sonIndex_;
 }
 
+void Box::sonBoxByIndex(Box &sonBox, int sonIndex){
+    for (int d=0; d<global::dim; ++d){
+        if (sonIndex % 2){
+            sonBox.lower[d] = .5 * (lower[d] + upper[d]);
+            sonBox.upper[d] = upper[d];
+        } else {
+            sonBox.lower[d] = lower[d];
+            sonBox.upper[d] = .5 * (lower[d] + upper[d]);
+        }
+        sonIndex /= 2;
+
+    }
+}
+
 double Box::getLength(){
     double length_ = 0;
     for (int d=0; d<global::dim; ++d){
@@ -37,4 +51,18 @@ bool Box::particleWithin(Particle &p){
         }
     }
     return true;
+}
+
+double Box::smallestDistance(Particle &p){
+    double distance_ = 0.;
+    for (int d=0; d<global::dim; ++d){
+        if (p.x[d] < lower[d]){
+            distance_ += pow(lower[d] - p.x[d], 2.);
+        } else if (p.x[d] > upper[d]) {
+            distance_ += pow(p.x[d] - upper[d], 2.);
+        } else {
+            distance_ += 0.;
+        }
+    }
+    return sqrt(distance_);
 }

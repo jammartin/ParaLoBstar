@@ -62,6 +62,10 @@ BarnesHut::BarnesHut(ConfigParser confP,
 
     if (parallel){
         tree->guessRanges();
+        Logger(INFO) << "...done. Sending particles ...";
+        tree->sendParticles();
+        Logger(INFO) << "...done. Building common coarse tree ...";
+        tree->buildCommonCoarseTree();
     }
 
     Logger(INFO) << "... done. Computing pseudo-particles ...";
@@ -89,7 +93,7 @@ void BarnesHut::run(){
             std::vector<std::vector<double>> x {};
             std::vector<std::vector<double>> v {};
             std::vector<keytype> k {};
-            std::vector<keytype> ranges { 0UL, DomainTree::keyMax };
+            std::vector<keytype> ranges = tree->getRanges();
 
             Logger(DEBUG) << "\t... collecting particle data ...";
             N = tree->getParticleData(m, x, v, k);
