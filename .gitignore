@@ -26,6 +26,9 @@
 *.a
 *.lib
 
+# 3rd party header libraries
+holib/
+
 # Executables
 bin/
 *.exe

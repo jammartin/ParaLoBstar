@@ -16,6 +16,9 @@ SRCDIR := src
 OBJDIR := obj
 DEPDIR := dep
 
+# header only libraries
+HOLIB := holib
+
 SOURCES := $(wildcard $(SRCDIR)/*.$(SRCEXT))
 DEPENDS := $(SOURCES:$(SRCDIR)/%.$(SRCEXT)=$(DEPDIR)/%.$(DEPEXT))
 OBJECTS := $(SOURCES:$(SRCDIR)/%.$(SRCEXT)=$(OBJDIR)/%.$(OBJEXT))
@@ -24,7 +27,7 @@ OBJECTS := $(SOURCES:$(SRCDIR)/%.$(SRCEXT)=$(OBJDIR)/%.$(OBJEXT))
 MAIN := main
 
 # setting general flags
-CXXFLAGS := -std=c++11 -I$(INCLDIR) -I/usr/include/hdf5/openmpi
+CXXFLAGS := -std=c++11 -I$(INCLDIR) -I$(HOLIB) -I/usr/include/hdf5/openmpi
 # setting linker flags
 LDFLAGS := -std=c++11 -lhdf5 -lboost_filesystem -lboost_mpi -lboost_serialization
 
@@ -59,6 +62,9 @@ $(DEPDIR):
 $(OBJDIR):
 	@mkdir -p $@
 
+$(HOLIB):
+	@mkdir -p $@
+
 # generating dependency files for all sources
 # sed changes '%.o: ...' to '%.o %.d: ...' in dependency file
 $(DEPDIR)/%.$(DEPEXT): $(SRCDIR)/%.$(SRCEXT) | $(DEPDIR)
@@ -72,8 +78,18 @@ $(DEPDIR)/%.$(DEPEXT): $(SRCDIR)/%.$(SRCEXT) | $(DEPDIR)
 include $(DEPENDS)
 
 # build module as shared library and install it on your system
-install:
-	@echo "Not implemented yet :("
+install: | $(HOLIB)
+	@echo "Downloading cxxopts.hpp into holib/ ..."
+	curl https://raw.githubusercontent.com/jarro2783/cxxopts/master/include/cxxopts.hpp -o $(HOLIB)/cxxopts.hpp
+	@echo "... done. Downloading HighFive as zip-file ..."
+	@mkdir tmp
+	curl https://github.com/BlueBrain/HighFive/archive/refs/heads/master.zip -L -o tmp/HighFive.zip
+	@echo "... extracting and copying include/highfive to holib/ ..."
+	@unzip -a tmp/HighFive.zip -d tmp/
+	@cp -r tmp/HighFive-master/include/highfive $(HOLIB)/.
+	@echo "... done. Deleting tmp/ ..."
+	@ rm -rf tmp
+	@echo "... done. Ready to build via 'make all|debug'."
 
 # build main target
 # check if target directory 'bin' already exist via prerequisite
