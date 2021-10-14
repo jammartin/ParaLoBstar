@@ -185,19 +185,19 @@ void SubDomainTree::compForce(){
         insertSubTree(particles2receive[i], root);
     }
 
-    compForce(root);
+    compForce(root, 0UL, 0);
     repair(root);
 
     delete[] particles2receive;
 }
 
-void SubDomainTree::compForce(TreeNode &t){
+void SubDomainTree::compForce(TreeNode &t, keytype k, int lvl){
     for (int i=0; i<global::powdim; ++i){
         if (t.son[i] != nullptr){
-            compForce(*t.son[i]);
+            compForce(*t.son[i], k | ((keytype)i << (global::dim*(global::maxTreeLvl-lvl-1))), lvl+1);
         }
     }
-    if (t.type != NodeType::commonCoarse && t.isLeaf()){
+    if (key2proc(k) == myRank && t.type != NodeType::commonCoarse && t.isLeaf()){
         // actual force calculation
         for (int d=0; d<global::dim; ++d){
             t.p.F[d] = 0.;
@@ -215,7 +215,7 @@ void SubDomainTree::particles2sendByTheta(std::map<keytype, Particle> *&particle
         }
     }
     int proc = key2proc(k);
-    if (proc != myRank && lvl > 0){
+    if (proc != myRank && lvl > 0){ // exclude root
         particles2sendByTheta(t, particles2send[proc], root, root.box.getLength(), 1UL);
     }
 }
@@ -238,16 +238,47 @@ void SubDomainTree::particles2sendByTheta(TreeNode &cc, std::map<keytype, Partic
 }
 
 
-void SubDomainTree::compPosition(){
-
+void SubDomainTree::compPosition(TreeNode &t){
+    for (int i=0; i<global::powdim; ++i){
+        if (t.son[i] != nullptr){
+            compPosition(*t.son[i]);
+        }
+    }
+    if (t.type == NodeType::particle && t.isLeaf()){
+        t.p.updateX(timeStep);
+    }
 }
 
-void SubDomainTree::compVelocity(){
-
+void SubDomainTree::compVelocity(TreeNode &t){
+    for (int i=0; i<global::powdim; ++i){
+        if (t.son[i] != nullptr){
+            compVelocity(*t.son[i]);
+        }
+    }
+    if (t.type == NodeType::particle && t.isLeaf()){
+        t.p.updateV(timeStep);
+    }
 }
 
-void SubDomainTree::moveParticles(){
-
+void SubDomainTree::moveParticles(TreeNode &t){
+    for (int i=0; i<global::powdim; ++i){
+        if (t.son[i] != nullptr){
+            moveParticles(*t.son[i]);
+        }
+    }
+    if (t.type == NodeType::particle && t.isLeaf() && !t.p.moved){
+        t.p.moved = true;
+        if (!t.box.particleWithin(t.p)){
+            if (root.box.particleWithin(t.p)){
+                insertParticle(t.p, root);
+                t.p.toDelete = true;
+            } else {
+                Logger(DEBUG) << "\t\tmoveLeaves(): Particle left system. x = ("
+                              << t.p.x[0] << ", " << t.p.x[1] << ", " << t.p.x[2] << ")";
+                t.p.toDelete = true;
+            }
+        }
+    }
 }
 
 void SubDomainTree::repair(TreeNode &t){
@@ -283,16 +314,9 @@ void SubDomainTree::repair(TreeNode &t){
     }
 }
 
-int SubDomainTree::getParticleData(std::vector<double> &m,
-                    std::vector<std::vector<double>> &x,
-                    std::vector<std::vector<double>> &v,
-                    std::vector<keytype> &k){
-    //TODO: Implement
-    return 0;
-}
-
 void SubDomainTree::guessRanges(){
-    numParticles = countParticles();
+    numParticles = 0;
+    Tree::countParticles(root, numParticles);
     Logger(DEBUG) << "\tNumber of particles on process = " << numParticles;
     range[0] = 0UL;
     range[numProcs] = keyMax;
@@ -458,4 +482,70 @@ int SubDomainTree::key2proc(keytype k){
     }
     Logger(ERROR) << "key2proc(): Key " << k << " cannot be assigned to any process.";
     return -1;
+}
+
+int SubDomainTree::countParticles(){
+    numParticles = 0;
+    Tree::countParticles(root, numParticles);
+    int N_ = 0;
+    mpi::all_reduce(comm, numParticles, N_, std::plus<keytype>());
+    return N_;
+}
+
+void SubDomainTree::dump2file(HighFive::DataSet &mDataSet, HighFive::DataSet &xDataSet,
+                              HighFive::DataSet &vDataSet, HighFive::DataSet &kDataSet){
+    // containers for particle data
+    std::vector<double> m {};
+    std::vector<std::vector<double>> x {};
+    std::vector<std::vector<double>> v {};
+    std::vector<keytype> k {};
+
+    getParticleData(m, x, v, k, root, 0UL, 0);
+
+    std::vector<int> procsNumParticles {};
+    mpi::all_gather(comm, numParticles, procsNumParticles);
+
+    std::size_t offset = 0;
+    for(int proc=0; proc<myRank; ++proc){
+        offset += procsNumParticles[proc];
+    }
+    Logger(DEBUG) << "\tWriting " << numParticles << " particles @" << offset;
+
+    // assuming countParticles() has been called immediately before
+    mDataSet.select({offset}, {std::size_t(numParticles)}).write(m);
+    xDataSet.select({offset , 0},
+                    {std::size_t(numParticles), std::size_t(global::dim)}).write(x);
+    vDataSet.select({offset , 0},
+                    {std::size_t(numParticles), std::size_t(global::dim)}).write(v);
+    kDataSet.select({offset}, {std::size_t(numParticles)}).write(k);
+}
+
+void SubDomainTree::getParticleData(std::vector<double> &m,
+                                    std::vector<std::vector<double>> &x,
+                                    std::vector<std::vector<double>> &v,
+                                    std::vector<keytype> &keys, TreeNode &t, keytype k, int lvl){
+    for (int i=0; i<global::powdim; ++i){
+        if (t.son[i] != nullptr){
+            getParticleData(m, x, v, keys,
+                            *t.son[i], k | ((keytype)i << (global::dim*(global::maxTreeLvl-lvl-1))), lvl+1);
+        }
+    }
+    if (t.type == NodeType::particle && t.isLeaf()){
+        m.push_back(t.p.m);
+        std::vector<double> xBuffer {};
+        std::vector<double> vBuffer {};
+        for(int d=0; d<global::dim; ++d){
+            xBuffer.push_back(t.p.x[d]);
+            vBuffer.push_back(t.p.v[d]);
+        }
+        x.push_back(xBuffer);
+        v.push_back(vBuffer);
+        keys.push_back(k);
+    }
+}
+
+std::vector<keytype> SubDomainTree::getRanges(){
+    std::vector<keytype> rangesVec_ {};
+    rangesVec_.assign(range, range+numProcs+1);
+    return rangesVec_;
 }

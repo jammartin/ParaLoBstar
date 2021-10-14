@@ -28,6 +28,30 @@ void Tree::insertParticle(Particle &p){
     }
 }
 
+void Tree::compPosition(){
+    compPosition(root);
+}
+
+void Tree::compVelocity(){
+    compVelocity(root);
+}
+
+void Tree::moveParticles(){
+    resetFlags(root);
+    moveParticles(root);
+    repair(root);
+}
+
+void Tree::resetFlags(TreeNode &t){
+    for (int i=0; i<global::powdim; ++i){
+        if (t.son[i] != nullptr){
+            resetFlags(*t.son[i]);
+        }
+    }
+    t.p.moved = false;
+    t.p.toDelete = false;
+}
+
 void Tree::forceBH(TreeNode &leaf, TreeNode &t, double l){
     if (&leaf != &t){
         double distance = 0.;

@@ -11,6 +11,7 @@
 
 #include "TreeNode.h"
 #include "Logger.h"
+#include <highfive/H5File.hpp>
 
 typedef std::uint_fast64_t keytype;
 
@@ -22,16 +23,14 @@ public:
 
     virtual void compPseudoParticles() = 0;
     virtual void compForce() = 0;
-    virtual void compPosition() = 0;
-    virtual void compVelocity() = 0;
-    virtual void moveParticles() = 0;
-    virtual int getParticleData(std::vector<double> &m,
-                                std::vector<std::vector<double>> &x,
-                                std::vector<std::vector<double>> &v,
-                                std::vector<keytype> &k) = 0;
+    virtual void dump2file(HighFive::DataSet &mDataSet, HighFive::DataSet &xDataSet, HighFive::DataSet &vDataSet,
+                           HighFive::DataSet &kDataSet) = 0;
 
-    virtual void insertParticle(Particle &p) final;
-    int countParticles();
+    void insertParticle(Particle &p);
+    void compPosition();
+    void compVelocity();
+    void moveParticles();
+    virtual int countParticles();
     virtual std::vector<keytype> getRanges();
 
     // placeholders for functions only implemented by SubDomainTree for the parallel mode
@@ -46,11 +45,18 @@ protected:
     double theta;
     double timeStep;
 
+    void countParticles(TreeNode &t, int &N);
     void forceBH(TreeNode &leaf, TreeNode &t, double l);
+
 
 private:
     virtual void insertParticle(Particle &p, TreeNode &t) = 0;
-    void countParticles(TreeNode &t, int &N);
+    virtual void compPosition(TreeNode &t) = 0;
+    virtual void compVelocity(TreeNode &t) = 0;
+    virtual void moveParticles(TreeNode &t) = 0;
+    virtual void repair(TreeNode &t) = 0;
+
+    void resetFlags(TreeNode &t);
     void deallocate(TreeNode &t);
 };
 

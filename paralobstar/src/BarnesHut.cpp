@@ -4,16 +4,17 @@
 
 #include "../include/BarnesHut.h"
 
-BarnesHut::BarnesHut(ConfigParser confP,
-                     int _myRank, int _numProcs) : domainSize { confP.getVal<double>("domainSize") },
-                                                   initFile { confP.getVal<std::string>("initFile") },
-                                                   parallel { confP.getVal<bool>("parallel") },
-                                                   timeStep { confP.getVal<double>("timeStep") },
-                                                   timeEnd { confP.getVal<double>("timeEnd") },
-                                                   h5DumpInterval { confP.getVal<int>("h5DumpInterval") },
-                                                   loadBalancingInterval { confP.getVal<int>("loadBalancingInterval") },
-                                                   myRank { _myRank }, numProcs { _numProcs }
+BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("domainSize") },
+                                           initFile { confP.getVal<std::string>("initFile") },
+                                           parallel { confP.getVal<bool>("parallel") },
+                                           timeStep { confP.getVal<double>("timeStep") },
+                                           timeEnd { confP.getVal<double>("timeEnd") },
+                                           h5DumpInterval { confP.getVal<int>("h5DumpInterval") },
+                                           loadBalancingInterval { confP.getVal<int>("loadBalancingInterval") }
 {
+    numProcs = comm.size();
+    myRank = comm.rank();
+
     Logger(INFO) << "Reading in initial distribution ...";
     InitialDistribution initDist { initFile };
 
@@ -41,11 +42,11 @@ BarnesHut::BarnesHut(ConfigParser confP,
 
     particles = new Particle[particlesPerProc]; // allocate memory
 
-    if (parallel){
+    if (parallel && numProcs > 1){
         initDist.getParticles(particles, myRank*particlesPerProc, particlesPerProc);
         tree = new SubDomainTree(domainSize, confP.getVal<double>("theta"), timeStep);
 
-    } else if (numProcs == 1){
+    } else if (!parallel && numProcs == 1){
         initDist.getAllParticles(particles);
         tree = new DomainTree(domainSize,confP.getVal<double>("theta"), timeStep);
 
@@ -59,6 +60,7 @@ BarnesHut::BarnesHut(ConfigParser confP,
     for (int i=0; i<particlesPerProc; ++i){
         tree->insertParticle(particles[i]);
     }
+    delete [] particles;
 
     if (parallel){
         tree->guessRanges();
@@ -78,7 +80,6 @@ BarnesHut::BarnesHut(ConfigParser confP,
 }
 
 BarnesHut::~BarnesHut(){
-    delete [] particles;
     delete tree;
 }
 
@@ -88,37 +89,35 @@ void BarnesHut::run(){
     while (t <= timeEnd){
         if (step % h5DumpInterval == 0){
             Logger(INFO) << "Dumping particles to h5 ...";
-            // containers for particle data
-            std::vector<double> m {};
-            std::vector<std::vector<double>> x {};
-            std::vector<std::vector<double>> v {};
-            std::vector<keytype> k {};
-            std::vector<keytype> ranges = tree->getRanges();
+            N = tree->countParticles();
+            Logger(DEBUG) << "\t... writing " << N << " particles to file ...";
 
-            Logger(DEBUG) << "\t... collecting particle data ...";
-            N = tree->getParticleData(m, x, v, k);
-            Logger(DEBUG) << "\t... done. Writing " << N << " particles to file ...";
+            std::vector<size_t> dataSpaceDims(2);
+            dataSpaceDims[0] = std::size_t(N); // number of particles
+            dataSpaceDims[1] = global::dim;
 
             std::stringstream stepss;
             stepss << std::setw(6) << std::setfill('0') << step;
             HighFive::File h5File {"output/ts" + stepss.str() + ".h5",
                                    HighFive::File::ReadWrite | HighFive::File::Create | HighFive::File::Truncate,
-                                   HighFive::MPIOFileDriver(MPI_COMM_WORLD, MPI_INFO_NULL) };
+                                   HighFive::MPIOFileDriver(comm, MPI_INFO_NULL) };
 
-            HighFive::DataSet mDataSet = h5File.createDataSet<double>("/m",  HighFive::DataSpace::From(m));
-            HighFive::DataSet xDataSet = h5File.createDataSet<double>("/x",  HighFive::DataSpace::From(x));
-            HighFive::DataSet vDataSet = h5File.createDataSet<double>("/v",  HighFive::DataSpace::From(v));
-            HighFive::DataSet kDataSet = h5File.createDataSet<keytype>("/key", HighFive::DataSpace::From(k));
+            HighFive::DataSet mDataSet = h5File.createDataSet<double>("/m", HighFive::DataSpace(N));
+            HighFive::DataSet xDataSet = h5File.createDataSet<double>("/x", HighFive::DataSpace(dataSpaceDims));
+            HighFive::DataSet vDataSet = h5File.createDataSet<double>("/v", HighFive::DataSpace(dataSpaceDims));
+            HighFive::DataSet kDataSet = h5File.createDataSet<keytype>("/key", HighFive::DataSpace(N));
+
+            std::vector<keytype> ranges = tree->getRanges();
             HighFive::DataSet rangesDataSet = h5File.createDataSet<keytype>("/ranges", HighFive::DataSpace::From(ranges));
+            // actually writing ranges only once
+            if (myRank == 0){
+                rangesDataSet.write(ranges);
+            }
 
-            mDataSet.write(m);
-            xDataSet.write(x);
-            vDataSet.write(v);
-            kDataSet.write(k);
-            rangesDataSet.write(ranges);
+            tree->dump2file(mDataSet, xDataSet, vDataSet, kDataSet);
             Logger(INFO) << "... done.";
         }
-        if (t == timeEnd){
+        if (t >= timeEnd){
             Logger(INFO) << "Finished!";
             break;
         }
@@ -136,6 +135,10 @@ void BarnesHut::run(){
         profiler.time(ProfilerIds::timeMove);
         tree->moveParticles();
         profiler.time2file(ProfilerIds::timeMove);
+
+        if (parallel){
+            tree->sendParticles();
+        }
 
         profiler.time(ProfilerIds::timePseudo);
         tree->compPseudoParticles();

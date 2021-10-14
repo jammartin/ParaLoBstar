@@ -19,17 +19,13 @@ public:
 
     void compPseudoParticles() override;
     void compForce() override;
-    void compPosition() override;
-    void compVelocity() override;
-    void moveParticles() override;
-    int getParticleData(std::vector<double> &m,
-                        std::vector<std::vector<double>> &x,
-                        std::vector<std::vector<double>> &v,
-                        std::vector<keytype> &k) override;
-
+    void dump2file(HighFive::DataSet &mDataSet, HighFive::DataSet &xDataSet, HighFive::DataSet &vDataSet,
+                   HighFive::DataSet &kDataSet) override;
     void guessRanges() override;
     void sendParticles() override;
     void buildCommonCoarseTree() override;
+    std::vector<keytype> getRanges() override;
+    int countParticles() override;
 
 private:
     mpi::communicator comm;
@@ -48,14 +44,20 @@ private:
     void particles2sendByTheta(std::map<keytype, Particle> *&particles2send, TreeNode &t, keytype k, int lvl);
     void particles2sendByTheta(TreeNode &cc, std::map<keytype, Particle> &particles4proc, TreeNode &t,
                                double l, keytype k);
-    void repair(TreeNode &t);
-    void compForce(TreeNode &t);
+    void repair(TreeNode &t) override;
+    void compForce(TreeNode &t, keytype k, int lvl);
+    void compPosition(TreeNode &t) override;
+    void compVelocity(TreeNode &t) override;
+    void moveParticles(TreeNode &t) override;
     void guessRanges(TreeNode &t, int &pCounter, int &rangeIndex, keytype k, int lvl);
     int key2proc(keytype k);
     void fillSendVectors(std::vector<Particle> *&particles2send, TreeNode &t, keytype k, int lvl);
     int particleExchange(std::vector<Particle> *&particles2send, Particle *&particles2receive);
     void buildCommonCoarseTree(TreeNode &t, keytype k, int lvl);
-
+    void getParticleData(std::vector<double> &m,
+                         std::vector<std::vector<double>> &x,
+                         std::vector<std::vector<double>> &v,
+                         std::vector<keytype> &keys, TreeNode &t, keytype k, int lvl);
 
 };
 

@@ -17,7 +17,7 @@
 
 class BarnesHut {
 public:
-    BarnesHut(ConfigParser confP, int _myRank, int _numProcs);
+    BarnesHut(ConfigParser confP);
     ~BarnesHut();
 
     void run();
@@ -29,13 +29,13 @@ private:
     bool parallel {};
     double timeStep {};
     double timeEnd {};
-    double theta {};
     int h5DumpInterval {};
     int loadBalancingInterval {};
 
     // mpi related variables
-    int myRank {};
-    int numProcs {};
+    mpi::communicator comm;
+    int myRank;
+    int numProcs;
 
     // storing reference to singleton profiler instance
     H5Profiler &profiler = H5Profiler::getInstance();
@@ -44,6 +44,8 @@ private:
     int N; // number of particles
     Particle *particles;
     Tree *tree;
+
+
 
 };
 

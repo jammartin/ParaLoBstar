@@ -19,8 +19,8 @@ int main(int argc, char *argv[]){
     boost::mpi::environment env { argc, argv };
     boost::mpi::communicator comm;
 
-    int myRank { comm.rank() };
-    int numProcs { comm.size() };
+    const int myRank { comm.rank() };
+    const int numProcs { comm.size() };
 
 
     cxxopts::Options cmdLineOptions { "paralobstar",
@@ -33,6 +33,11 @@ int main(int argc, char *argv[]){
 
     auto cmdLineOpts = cmdLineOptions.parse(argc, argv);
 
+    if (cmdLineOpts.count("help")) {
+        std::cout << cmdLineOptions.help() << std::endl;
+        env.abort(0);
+    }
+
     ConfigParser configParser { cmdLineOpts["config"].as<std::string>() };
 
     // initialize Logger
@@ -42,11 +47,11 @@ int main(int argc, char *argv[]){
     LOGCFG.outputRank = configParser.getVal<int>("outputRank");
 
     // create singleton instance
-    H5Profiler &profiler = H5Profiler::getInstance(cmdLineOpts["profiling"].as<std::string>(), myRank, numProcs);
+    H5Profiler::getInstance(cmdLineOpts["profiling"].as<std::string>(), myRank, numProcs);
 
-    BarnesHut algorithm { configParser, myRank, numProcs };
+    BarnesHut algorithm { configParser };
 
-    //algorithm.run();
+    algorithm.run();
 
     return 0;
 }

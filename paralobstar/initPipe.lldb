@@ -1,8 +1,9 @@
 file bin/paralobstar
 
 # Setting breakpoints
-#b BarnesHut.cpp:75
+#b SubDomainTree.cpp:189
+#b BarnesHut.cpp:101
 #br dis 1
 #b SubDomainTree.cpp:153
 
-run -v
+run -v process handle SIGINT -p true

@@ -39,7 +39,7 @@ endif
 all: $(OBJECTS) $(TRGTDIR)/$(TARGET)
 
 # build all with debug flags
-debug: CXXFLAGS += -g
+debug: CXXFLAGS += -g -Wall
 # show linker invocation when building debug target
 debug: LDFLAGS += -v
 debug: all

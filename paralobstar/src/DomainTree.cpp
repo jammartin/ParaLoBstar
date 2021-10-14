@@ -74,10 +74,6 @@ void DomainTree::compForce(TreeNode &t){
     }
 }
 
-void DomainTree::compPosition(){
-    compPosition(root);
-}
-
 void DomainTree::compPosition(TreeNode &t){
     for (int i=0; i<global::powdim; ++i){
         if (t.son[i] != nullptr){
@@ -87,10 +83,6 @@ void DomainTree::compPosition(TreeNode &t){
     if (t.isLeaf()){
         t.p.updateX(timeStep);
     }
-}
-
-void DomainTree::compVelocity(){
-    compVelocity(root);
 }
 
 void DomainTree::compVelocity(TreeNode &t){
@@ -104,26 +96,10 @@ void DomainTree::compVelocity(TreeNode &t){
     }
 }
 
-void DomainTree::moveParticles(){
-    resetFlags(root);
-    moveLeaves(root);
-    repair(root);
-}
-
-void DomainTree::resetFlags(TreeNode &t){
+void DomainTree::moveParticles(TreeNode &t){
     for (int i=0; i<global::powdim; ++i){
         if (t.son[i] != nullptr){
-            resetFlags(*t.son[i]);
-        }
-    }
-    t.p.moved = false;
-    t.p.toDelete = false;
-}
-
-void DomainTree::moveLeaves(TreeNode &t){
-    for (int i=0; i<global::powdim; ++i){
-        if (t.son[i] != nullptr){
-            moveLeaves(*t.son[i]);
+            moveParticles(*t.son[i]);
         }
     }
     if (t.isLeaf() && !t.p.moved){
@@ -173,26 +149,33 @@ void DomainTree::repair(TreeNode &t){
     }
 }
 
-int DomainTree::getParticleData(std::vector<double> &m,
-                                std::vector<std::vector<double>> &x,
-                                std::vector<std::vector<double>> &v,
-                                std::vector<keytype> &k){
-    int N_ = 0;
-    getParticleData(root, m, x, v, k, N_);
-    return N_;
+void DomainTree::dump2file(HighFive::DataSet &mDataSet, HighFive::DataSet &xDataSet,
+                           HighFive::DataSet &vDataSet, HighFive::DataSet &kDataSet) {
+    // containers for particle data
+    std::vector<double> m {};
+    std::vector<std::vector<double>> x {};
+    std::vector<std::vector<double>> v {};
+    std::vector<keytype> k {};
+
+    getParticleData(m, x, v, k, root);
+
+    mDataSet.write(m);
+    xDataSet.write(x);
+    vDataSet.write(v);
+    kDataSet.write(k);
+
 }
 
-void DomainTree::getParticleData(TreeNode &t, std::vector<double> &m,
-                                std::vector<std::vector<double>> &x,
-                                std::vector<std::vector<double>> &v,
-                                 std::vector<keytype> &k, int &N){
+void DomainTree::getParticleData(std::vector<double> &m,
+                                 std::vector<std::vector<double>> &x,
+                                 std::vector<std::vector<double>> &v,
+                                 std::vector<keytype> &k, TreeNode &t){
     for (int i=0; i<global::powdim; ++i){
         if (t.son[i] != nullptr){
-            getParticleData(*t.son[i], m, x, v, k, N);
+            getParticleData(m, x, v, k, *t.son[i]);
         }
     }
     if (t.isLeaf()){
-        ++N;
         m.push_back(t.p.m);
         std::vector<double> xBuffer {};
         std::vector<double> vBuffer {};
@@ -202,7 +185,6 @@ void DomainTree::getParticleData(TreeNode &t, std::vector<double> &m,
         }
         x.push_back(xBuffer);
         v.push_back(vBuffer);
-        // dummy key
-        k.push_back(0UL);
+        k.push_back(0UL); // dummy key
     }
 }
