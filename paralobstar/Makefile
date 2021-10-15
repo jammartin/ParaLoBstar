@@ -29,7 +29,7 @@ MAIN := main
 # setting general flags
 CXXFLAGS := -std=c++11 -I$(INCLDIR) -I$(HOLIB) -I/usr/include/hdf5/openmpi
 # setting linker flags
-LDFLAGS := -std=c++11 -lhdf5 -lboost_filesystem -lboost_mpi -lboost_serialization
+LDFLAGS := -std=c++11 -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -lhdf5 -lboost_filesystem -lboost_mpi -lboost_serialization
 
 # get kernel name to be able to run sed correctly on Darwin (MacOS) or Linux kernels
 KERNEL := $(shell uname -s)
@@ -77,8 +77,12 @@ $(DEPDIR)/%.$(DEPEXT): $(SRCDIR)/%.$(SRCEXT) | $(DEPDIR)
 # include targets from generated dependency files
 include $(DEPENDS)
 
+prepare-run:
+	@mkdir -p output
+	@mkdir -p log
+
 # build module as shared library and install it on your system
-install: | $(HOLIB)
+install: prepare-run | $(HOLIB)
 	@echo "Downloading cxxopts.hpp into holib/ ..."
 	curl https://raw.githubusercontent.com/jarro2783/cxxopts/master/include/cxxopts.hpp -o $(HOLIB)/cxxopts.hpp
 	@echo "... done. Downloading HighFive as zip-file ..."
@@ -95,7 +99,7 @@ install: | $(HOLIB)
 # check if target directory 'bin' already exist via prerequisite
 $(TRGTDIR)/$(TARGET): $(OBJDIR)/$(MAIN).$(OBJEXT) $(OBJECTS) | $(TRGTDIR)
 	@echo "Linking binary '$@'..."
-	@$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OBJECTS) -o $(TRGTDIR)/$(TARGET)
+	@$(CXX) $(CXXFLAGS) $(OBJECTS) -o $(TRGTDIR)/$(TARGET) $(LDFLAGS)
 	@echo "... done."
 
 # pattern rule to build object from source file
@@ -104,4 +108,4 @@ $(OBJDIR)/%.$(OBJEXT): $(DEPDIR)/%.$(DEPEXT) | $(OBJDIR)
 	@$(CXX) -c $(CXXFLAGS) $(@:$(OBJDIR)/%.$(OBJEXT)=$(SRCDIR)/%.$(SRCEXT)) -o $@
 	@echo "... done."
 
-.PHONY: all debug clean cleaner install
+.PHONY: all debug clean cleaner install prepare-run

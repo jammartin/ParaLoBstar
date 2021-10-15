@@ -9,12 +9,13 @@
 #include <boost/mpi.hpp>
 
 #include "Tree.h"
+#include "lookup.h"
 
 namespace mpi = boost::mpi;
 
 class SubDomainTree : public Tree {
 public:
-    SubDomainTree(double domainSize, double theta, double timeStep);
+    SubDomainTree(double domainSize, double theta, double timeStep, bool hilbert);
     ~SubDomainTree();
 
     void compPseudoParticles() override;
@@ -24,7 +25,9 @@ public:
     void guessRanges() override;
     void sendParticles() override;
     void buildCommonCoarseTree() override;
+    void newLoadDistribution() override;
     std::vector<keytype> getRanges() override;
+    void moveParticles() override;
     int countParticles() override;
 
 private:
@@ -35,6 +38,11 @@ private:
     int numParticles;
 
     static constexpr int mpiTag { 17 }; // arbitrary tag
+
+    bool hilbertFlag { false };
+    static keytype Lebesgue(keytype k_, int _){ return k_; }
+    static keytype Lebesgue2Hilbert(keytype lebesgue, int level);
+    keytype (*getKey)(keytype, int){ &Lebesgue };
 
     void insertParticle(Particle &p, TreeNode &t) override;
     void insertSubTree(Particle &p, TreeNode &t);
@@ -49,11 +57,13 @@ private:
     void compPosition(TreeNode &t) override;
     void compVelocity(TreeNode &t) override;
     void moveParticles(TreeNode &t) override;
-    void guessRanges(TreeNode &t, int &pCounter, int &rangeIndex, keytype k, int lvl);
+    void guessRanges(int &pCounter, int &rangeIndex, TreeNode &t, keytype k, int lvl);
+    void updateRanges(int &myDistr, int &rangeIndex, int newDistribution[], TreeNode &t, keytype k, int lvl);
     int key2proc(keytype k);
     void fillSendVectors(std::vector<Particle> *&particles2send, TreeNode &t, keytype k, int lvl);
     int particleExchange(std::vector<Particle> *&particles2send, Particle *&particles2receive);
     void buildCommonCoarseTree(TreeNode &t, keytype k, int lvl);
+    void clearCommonCoarseTree(TreeNode &t);
     void getParticleData(std::vector<double> &m,
                          std::vector<std::vector<double>> &x,
                          std::vector<std::vector<double>> &v,

@@ -1,7 +1,6 @@
 # Set compiler
 CXX := g++
 
-# example program utilizing all modules
 TRGTDIR := bin
 TARGET := h5renderer
 
@@ -17,6 +16,9 @@ SRCDIR := src
 OBJDIR := obj
 DEPDIR := dep
 
+# header only libraries
+HOLIB := holib
+
 SOURCES := $(wildcard $(SRCDIR)/*.$(SRCEXT))
 DEPENDS := $(SOURCES:$(SRCDIR)/%.$(SRCEXT)=$(DEPDIR)/%.$(DEPEXT))
 OBJECTS := $(SOURCES:$(SRCDIR)/%.$(SRCEXT)=$(OBJDIR)/%.$(OBJEXT))
@@ -25,22 +27,24 @@ OBJECTS := $(SOURCES:$(SRCDIR)/%.$(SRCEXT)=$(OBJDIR)/%.$(OBJEXT))
 MAIN := main
 
 # setting general flags
-CXXFLAGS := -std=c++11 -I$(INCLDIR) -I/usr/include/hdf5/serial -Xpreprocessor -fopenmp
+CXXFLAGS := -std=c++11 -I$(INCLDIR) -I$(HOLIB) -I/usr/include/hdf5/serial -Xpreprocessor -fopenmp
 # setting linker flags
-LDFLAGS := -lboost_system -lboost_filesystem -L/usr/lib/x86_64-linux-gnu/hdf5/serial/ -lhdf5 -lomp
+LDFLAGS := -std=c++11 -L/usr/lib/x86_64-linux-gnu/hdf5/serial/ -lhdf5 -lboost_system -lboost_filesystem
 
 # get kernel name to be able to run sed correctly on Darwin (MacOS) or Linux kernels
 KERNEL := $(shell uname -s)
 ifeq ($(KERNEL), Darwin) 
 	SED := sed -i "~"
+	LDFLAGS += -lomp
 else
 	SED := sed -i
+	LDFLAGS += -lgomp
 endif
 
 all: $(OBJECTS) $(TRGTDIR)/$(TARGET)
 
 # build all with debug flags
-debug: CXXFLAGS += -g
+debug: CXXFLAGS += -g -Wall
 # show linker invocation when building debug target
 debug: LDFLAGS += -v
 debug: all
@@ -51,9 +55,6 @@ clean: | $(TRGTDIR)
 cleaner: clean | $(TRGTDIR)
 	@rm -r $(DEPENDS)
 
-run: all
-	$(TRGTDIR)/$(TARGET)
-
 $(TRGTDIR):
 	@mkdir -p $@
 
@@ -61,6 +62,9 @@ $(DEPDIR):
 	@mkdir -p $@
 
 $(OBJDIR):
+	@mkdir -p $@
+
+$(HOLIB):
 	@mkdir -p $@
 
 # generating dependency files for all sources
@@ -75,15 +79,28 @@ $(DEPDIR)/%.$(DEPEXT): $(SRCDIR)/%.$(SRCEXT) | $(DEPDIR)
 # include targets from generated dependency files
 include $(DEPENDS)
 
+prepare-run:
+	@mkdir -p output
+
 # build module as shared library and install it on your system
-install:
-	@echo "Not implemented yet :("
+install: prepare-run | $(HOLIB)
+	@echo "Downloading cxxopts.hpp into holib/ ..."
+	curl https://raw.githubusercontent.com/jarro2783/cxxopts/master/include/cxxopts.hpp -o $(HOLIB)/cxxopts.hpp
+	@echo "... done. Downloading HighFive as zip-file ..."
+	@mkdir tmp
+	curl https://github.com/BlueBrain/HighFive/archive/refs/heads/master.zip -L -o tmp/HighFive.zip
+	@echo "... extracting and copying include/highfive to holib/ ..."
+	@unzip -a tmp/HighFive.zip -d tmp/
+	@cp -r tmp/HighFive-master/include/highfive $(HOLIB)/.
+	@echo "... done. Deleting tmp/ ..."
+	@ rm -rf tmp
+	@echo "... done. Ready to build via 'make all|debug'."
 
 # build main target
 # check if target directory 'bin' already exist via prerequisite
 $(TRGTDIR)/$(TARGET): $(OBJDIR)/$(MAIN).$(OBJEXT) $(OBJECTS) | $(TRGTDIR)
 	@echo "Linking binary '$@'..."
-	@$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OBJECTS) -o $(TRGTDIR)/$(TARGET)
+	@$(CXX) $(CXXFLAGS) $(OBJECTS) -o $(TRGTDIR)/$(TARGET) $(LDFLAGS)
 	@echo "... done."
 
 # pattern rule to build object from source file
@@ -92,4 +109,4 @@ $(OBJDIR)/%.$(OBJEXT): $(DEPDIR)/%.$(DEPEXT) | $(OBJDIR)
 	@$(CXX) -c $(CXXFLAGS) $(@:$(OBJDIR)/%.$(OBJEXT)=$(SRCDIR)/%.$(SRCEXT)) -o $@
 	@echo "... done."
 
-.PHONY: all debug clean cleaner
+.PHONY: all debug clean cleaner install prepare-run

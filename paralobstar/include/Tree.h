@@ -29,7 +29,7 @@ public:
     void insertParticle(Particle &p);
     void compPosition();
     void compVelocity();
-    void moveParticles();
+    virtual void moveParticles();
     virtual int countParticles();
     virtual std::vector<keytype> getRanges();
 
@@ -37,6 +37,7 @@ public:
     virtual void guessRanges(){}
     virtual void sendParticles(){}
     virtual void buildCommonCoarseTree(){}
+    virtual void newLoadDistribution(){}
 
 
 protected:

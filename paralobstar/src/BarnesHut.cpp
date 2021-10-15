@@ -44,7 +44,7 @@ BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("do
 
     if (parallel && numProcs > 1){
         initDist.getParticles(particles, myRank*particlesPerProc, particlesPerProc);
-        tree = new SubDomainTree(domainSize, confP.getVal<double>("theta"), timeStep);
+        tree = new SubDomainTree(domainSize, confP.getVal<double>("theta"), timeStep, confP.getVal<bool>("hilbert"));
 
     } else if (!parallel && numProcs == 1){
         initDist.getAllParticles(particles);
@@ -136,8 +136,9 @@ void BarnesHut::run(){
         tree->moveParticles();
         profiler.time2file(ProfilerIds::timeMove);
 
-        if (parallel){
-            tree->sendParticles();
+        if (parallel && step % loadBalancingInterval == 0){
+            Logger(INFO) << "\t... loadBalancing ...";
+            tree->newLoadDistribution();
         }
 
         profiler.time(ProfilerIds::timePseudo);

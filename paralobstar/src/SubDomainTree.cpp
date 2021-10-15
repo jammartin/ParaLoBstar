@@ -4,14 +4,32 @@
 
 #include "../include/SubDomainTree.h"
 
-SubDomainTree::SubDomainTree(double domainSize, double theta, double timeStep) : Tree(domainSize, theta, timeStep){
+SubDomainTree::SubDomainTree(double domainSize, double theta, double timeStep, bool hilbert) : Tree(domainSize, theta, timeStep){
     numProcs = comm.size();
     myRank = comm.rank();
     range = new keytype[numProcs+1];
+    if (hilbert){
+        hilbertFlag = true;
+        getKey = &Lebesgue2Hilbert;
+    }
 }
 
 SubDomainTree::~SubDomainTree(){
     delete [] range;
+}
+
+keytype SubDomainTree::Lebesgue2Hilbert(keytype lebesgue, int level){
+    keytype hilbert = 0UL;
+    int dir = 0;
+    for (int lvl=global::maxTreeLvl; lvl>0; --lvl){
+        int cell = (lebesgue >> ((lvl-1)*global::dim)) & (keytype)((1<<global::dim)-1);
+        hilbert = hilbert << global::dim;
+        if (lvl>global::maxTreeLvl-level){
+            hilbert += lookup::HilbertTable[dir][cell];
+        }
+        dir = lookup::DirTable[dir][cell];
+    }
+    return hilbert;
 }
 
 void SubDomainTree::insertParticle(Particle &p, TreeNode &t) {
@@ -197,7 +215,7 @@ void SubDomainTree::compForce(TreeNode &t, keytype k, int lvl){
             compForce(*t.son[i], k | ((keytype)i << (global::dim*(global::maxTreeLvl-lvl-1))), lvl+1);
         }
     }
-    if (key2proc(k) == myRank && t.type != NodeType::commonCoarse && t.isLeaf()){
+    if (key2proc(getKey(k, lvl)) == myRank && t.type != NodeType::commonCoarse && t.isLeaf()){
         // actual force calculation
         for (int d=0; d<global::dim; ++d){
             t.p.F[d] = 0.;
@@ -214,7 +232,7 @@ void SubDomainTree::particles2sendByTheta(std::map<keytype, Particle> *&particle
                                   k | ((keytype)i << (global::dim*(global::maxTreeLvl-lvl-1))), lvl+1);
         }
     }
-    int proc = key2proc(k);
+    int proc = key2proc(getKey(k, lvl));
     if (proc != myRank && lvl > 0){ // exclude root
         particles2sendByTheta(t, particles2send[proc], root, root.box.getLength(), 1UL);
     }
@@ -258,6 +276,11 @@ void SubDomainTree::compVelocity(TreeNode &t){
     if (t.type == NodeType::particle && t.isLeaf()){
         t.p.updateV(timeStep);
     }
+}
+
+void SubDomainTree::moveParticles(){
+    Tree::moveParticles();
+    sendParticles();
 }
 
 void SubDomainTree::moveParticles(TreeNode &t){
@@ -314,49 +337,6 @@ void SubDomainTree::repair(TreeNode &t){
     }
 }
 
-void SubDomainTree::guessRanges(){
-    numParticles = 0;
-    Tree::countParticles(root, numParticles);
-    Logger(DEBUG) << "\tNumber of particles on process = " << numParticles;
-    range[0] = 0UL;
-    range[numProcs] = keyMax;
-    int pCounter { 0 };
-    int rangeIndex { 1 };
-    guessRanges(root, pCounter, rangeIndex, 0UL, 0);
-    Logger(DEBUG) << "\tGuessed ranges on process:";
-    for (int j=0; j<=numProcs; ++j){
-        Logger(DEBUG) << "\t\trange[" << j << "] = " << range[j];
-    }
-
-    keytype sendRange[numProcs+1];
-    for (int j=0; j<=numProcs; ++j){
-        sendRange[j] = range[j]/numProcs;
-    }
-
-    mpi::all_reduce(comm, sendRange, numProcs+1, range, std::plus<keytype>());
-
-    Logger(INFO) << "Averaged guessed ranges:";
-    for (int j=0; j<=numProcs; ++j){
-        Logger(INFO) << "\trange[" << j << "] = " << range[j];
-    }
-}
-
-void SubDomainTree::guessRanges(TreeNode &t, int &pCounter, int &rangeIndex, keytype k, int lvl){
-    for (int i=0; i<global::powdim; ++i){
-        if (t.son[i] != nullptr && rangeIndex < numProcs){ // range[numProcs] is set manually to keyMax
-            guessRanges(*t.son[i], pCounter, rangeIndex,
-                        k | ((keytype)i << (global::dim*(global::maxTreeLvl-lvl-1))), lvl+1);
-        }
-    }
-    if (t.type == NodeType::particle && t.isLeaf()){
-        ++pCounter;
-        if (pCounter > round((double)numParticles/(double)numProcs)*rangeIndex){
-            range[rangeIndex] = k;
-            ++rangeIndex;
-        }
-    }
-}
-
 void SubDomainTree::sendParticles(){
     auto particles2send = new std::vector<Particle>[numProcs];
 
@@ -387,7 +367,7 @@ void SubDomainTree::fillSendVectors(std::vector<Particle> *&particles2send, Tree
         }
     }
     int particleProc;
-    if (t.type == NodeType::particle && t.isLeaf() && (particleProc = key2proc(k)) != myRank){
+    if (t.type == NodeType::particle && t.isLeaf() && (particleProc = key2proc(getKey(k, lvl))) != myRank){
         particles2send[particleProc].push_back(t.p);
         t.p.toDelete = true;
     }
@@ -459,8 +439,9 @@ void SubDomainTree::buildCommonCoarseTree() {
 
 void SubDomainTree::buildCommonCoarseTree(TreeNode &t, keytype k, int lvl) {
     t.type = NodeType::commonCoarse;
-    int proc1 = key2proc(k);
-    int proc2 = key2proc(k | keyMax >> (global::dim*lvl+1));
+    keytype key = getKey(k, lvl);
+    int proc1 = key2proc(key);
+    int proc2 = key2proc(key | keyMax >> (global::dim*lvl+1));
     if (proc1 != proc2){
         for (int i=0; i<global::powdim; ++i){
             if (t.son[i] == nullptr){
@@ -476,11 +457,156 @@ void SubDomainTree::buildCommonCoarseTree(TreeNode &t, keytype k, int lvl) {
     }
 }
 
-int SubDomainTree::key2proc(keytype k){
-    for (int j=0; j<numProcs; ++j){
-        if (k >= range[j] && k < range[j+1]) return j;
+void SubDomainTree::clearCommonCoarseTree(TreeNode &t){
+    t.type = NodeType::pseudoParticle;
+    for (int i=0; i<global::powdim; ++i){
+        if (t.son[i] != nullptr && t.son[i]->type == NodeType::commonCoarse){
+            clearCommonCoarseTree(*t.son[i]);
+            if (t.son[i]->isLeaf() && t.son[i]->type == NodeType::pseudoParticle){
+                delete t.son[i];
+                t.son[i] = nullptr;
+            }
+        }
     }
-    Logger(ERROR) << "key2proc(): Key " << k << " cannot be assigned to any process.";
+}
+
+void SubDomainTree::guessRanges(){
+    numParticles = 0;
+    Tree::countParticles(root, numParticles);
+    Logger(DEBUG) << "\tNumber of particles on process = " << numParticles;
+    int pCounter = 0;
+    int rangeIndex = 1;
+    guessRanges(pCounter, rangeIndex, root, 0UL, 0);
+
+    Logger(DEBUG) << "\tGuessed ranges on process:";
+    for (int j=0; j<=numProcs; ++j){
+        Logger(DEBUG) << "\t\trange[" << j << "] = " << range[j];
+    }
+
+    keytype sendRange[numProcs+1];
+    for (int j=0; j<=numProcs; ++j){
+        sendRange[j] = range[j]/numProcs;
+    }
+
+    mpi::all_reduce(comm, sendRange, numProcs+1, range, std::plus<keytype>());
+    range[0] = 0UL;
+    range[numProcs] = keyMax;
+
+    Logger(INFO) << "Averaged guessed ranges:";
+    for (int j=0; j<=numProcs; ++j){
+        Logger(INFO) << "\trange[" << j << "] = " << range[j];
+    }
+}
+
+void SubDomainTree::guessRanges(int &pCounter, int &rangeIndex, TreeNode &t, keytype k, int lvl){
+    if (hilbertFlag){
+        std::map<keytype, int> keyMap;
+        for (int i = 0; i < global::powdim; ++i) {
+            // sorting implicitly in ascending Hilbert key order utilizing an ordered map
+            keytype hilbert = getKey(k | ((keytype)i << (global::dim*(global::maxTreeLvl-lvl-1))), lvl+1);
+            keyMap[hilbert] = i;
+        }
+        // actual recursion in correct order
+        for (std::map<keytype, int>::iterator kIt = keyMap.begin(); kIt != keyMap.end(); ++kIt){
+            if (t.son[kIt->second] != nullptr && rangeIndex < numProcs){
+                guessRanges(pCounter, rangeIndex, *t.son[kIt->second],
+                            k | ((keytype)kIt->second << (global::dim*(global::maxTreeLvl-lvl-1))), lvl+1);
+            }
+        }
+    } else {
+        for (int i=0; i<global::powdim; ++i){
+            if (t.son[i] != nullptr && rangeIndex < numProcs){ // range[numProcs] is set manually to keyMax
+                guessRanges(pCounter, rangeIndex, *t.son[i],
+                            k | ((keytype)i << (global::dim*(global::maxTreeLvl-lvl-1))), lvl+1);
+            }
+        }
+    }
+    if (t.type == NodeType::particle && t.isLeaf()){
+        ++pCounter;
+        if (pCounter > round((double)numParticles/(double)numProcs)*rangeIndex){
+            range[rangeIndex] = getKey(k, lvl);
+            ++rangeIndex;
+        }
+    }
+}
+
+void SubDomainTree::newLoadDistribution(){
+
+    int N = countParticles();
+    int particlesOnProc[numProcs];
+    mpi::all_gather(comm, numParticles, particlesOnProc);
+
+    // create old and new particle distributions
+    int oldDistribution[numProcs+1], newDistribution[numProcs+1];
+    oldDistribution[0] = 0;
+    for (int proc=0; proc<numProcs; ++proc){
+        oldDistribution[proc+1] = oldDistribution[proc] + particlesOnProc[proc];
+    }
+    for (int j=0; j<=numProcs; ++j){
+        newDistribution[j] = (j * N)/numProcs; // new load distribution
+        range[j] = 0UL; // reset ranges to zero for all_reduce later on
+    }
+    int rangeIndex = 0;
+    int myDistr = oldDistribution[myRank];
+    while (myDistr > newDistribution[rangeIndex]) ++rangeIndex;
+    updateRanges(myDistr, rangeIndex, newDistribution, root, 0UL, 0);
+
+    range[0] = 0UL;
+    range[numProcs] = keyMax;
+
+    keytype sendRange[numProcs+1];
+    std::copy(range, range+numProcs+1, sendRange);
+
+    mpi::all_reduce(comm, sendRange, numProcs+1, range, mpi::maximum<keytype>());
+
+    Logger(INFO) << "New ranges:";
+    for (int j=0; j<=numProcs; ++j){
+        Logger(INFO) << "\trange[" << j << "] = " << range[j];
+    }
+
+    sendParticles();
+    clearCommonCoarseTree(root);
+    buildCommonCoarseTree();
+
+}
+
+void SubDomainTree::updateRanges(int &myDistr, int &rangeIndex, int newDistribution[], TreeNode &t, keytype k, int lvl){
+    if (hilbertFlag){
+        std::map<keytype, int> keyMap;
+        for (int i = 0; i < global::powdim; ++i) {
+            // sorting implicitly in ascending Hilbert key order utilizing an ordered map
+            keytype hilbert = getKey(k | ((keytype)i << (global::dim*(global::maxTreeLvl-lvl-1))), lvl+1);
+            keyMap[hilbert] = i;
+        }
+        // actual recursion in correct order
+        for (std::map<keytype, int>::iterator kIt = keyMap.begin(); kIt != keyMap.end(); ++kIt){
+            if (t.son[kIt->second] != nullptr){
+                updateRanges(myDistr, rangeIndex, newDistribution,*t.son[kIt->second],
+                            k | ((keytype)kIt->second << (global::dim*(global::maxTreeLvl-lvl-1))), lvl+1);
+            }
+        }
+    } else {
+        for (int i=0; i<global::powdim; ++i){
+            if (t.son[i] != nullptr){
+                updateRanges(myDistr, rangeIndex, newDistribution, *t.son[i],
+                            k | ((keytype)i << (global::dim*(global::maxTreeLvl-lvl-1))), lvl+1);
+            }
+        }
+    }
+    if (t.type == NodeType::particle && t.isLeaf()){
+        while (myDistr >= newDistribution[rangeIndex]){
+            range[rangeIndex] = getKey(k, lvl);
+            ++rangeIndex;
+        }
+        ++myDistr;
+    }
+}
+
+int SubDomainTree::key2proc(keytype key){
+    for (int j=0; j<numProcs; ++j){
+        if (key >= range[j] && key < range[j+1]) return j;
+    }
+    Logger(ERROR) << "key2proc(): Key " << key << " cannot be assigned to any process.";
     return -1;
 }
 
@@ -502,12 +628,12 @@ void SubDomainTree::dump2file(HighFive::DataSet &mDataSet, HighFive::DataSet &xD
 
     getParticleData(m, x, v, k, root, 0UL, 0);
 
-    std::vector<int> procsNumParticles {};
-    mpi::all_gather(comm, numParticles, procsNumParticles);
+    std::vector<int> particlesOnProc {};
+    mpi::all_gather(comm, numParticles, particlesOnProc);
 
     std::size_t offset = 0;
     for(int proc=0; proc<myRank; ++proc){
-        offset += procsNumParticles[proc];
+        offset += particlesOnProc[proc];
     }
     Logger(DEBUG) << "\tWriting " << numParticles << " particles @" << offset;
 
