@@ -1,3 +1,6 @@
+# Set shell
+SHELL := /bin/bash
+
 # Set compiler
 CXX := mpic++
 
@@ -93,7 +96,16 @@ install: prepare-run | $(HOLIB)
 	@cp -r tmp/HighFive-master/include/highfive $(HOLIB)/.
 	@echo "... done. Deleting tmp/ ..."
 	@ rm -rf tmp
-	@echo "... done. Ready to build via 'make all|debug'."
+	@echo "... done. Ready to build via 'make all|debug|binac'."
+
+binac-load-modules:
+	@echo "Loading modules ..."
+	source binacLoadModules.sh
+	@echo "... done."
+
+binac: CXXFLAGS += -I/opt/bwhpc/common/lib/hdf5/1.10.7-openmpi-3.1-gnu-9.2/include -I$(HOME)/local/include
+binac: LDFLAGS := -std=c++11 -L/opt/bwhpc/common/lib/hdf5/1.10.7-openmpi-3.1-gnu-9.2/lib -L$(HOME)/local/lib -lhdf5 -lboost_filesystem -lboost_mpi -lboost_serialization -lboost_atomic
+binac: binac-load-modules all
 
 # build main target
 # check if target directory 'bin' already exist via prerequisite
@@ -108,4 +120,4 @@ $(OBJDIR)/%.$(OBJEXT): $(DEPDIR)/%.$(DEPEXT) | $(OBJDIR)
 	@$(CXX) -c $(CXXFLAGS) $(@:$(OBJDIR)/%.$(OBJEXT)=$(SRCDIR)/%.$(SRCEXT)) -o $@
 	@echo "... done."
 
-.PHONY: all debug clean cleaner install prepare-run
+.PHONY: all debug clean cleaner install prepare-run binac binac-load-modules

@@ -44,4 +44,6 @@ bin/
 output/
 log/
 
+# temporary emacs files 
+*~
 
