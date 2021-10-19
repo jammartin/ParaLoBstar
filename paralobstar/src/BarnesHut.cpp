@@ -25,7 +25,7 @@ BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("do
     Logger(INFO) << "Number of time steps = " << steps;
 
     // Initialize profiler data sets for both serial and parallel mode
-    profiler.createValueDataSet<int>(ProfilerIds::N, steps);
+    profiler.createValueDataSet<int>(ProfilerIds::N, steps+1);
     profiler.createTimeDataSet(ProfilerIds::timePos, steps);
     profiler.createTimeDataSet(ProfilerIds::timeMove, steps);
     profiler.createTimeDataSet(ProfilerIds::timePseudo, steps);
@@ -76,6 +76,9 @@ BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("do
     Logger(INFO) << "... done. Computing forces ...";
     tree->compForce();
 
+    N = tree->countParticles();
+    profiler.value2file(ProfilerIds::N, tree->getNumParticles());
+
     Logger(INFO) << "... done. Initialization finished!";
 }
 
@@ -102,29 +105,46 @@ void BarnesHut::run(){
                                    HighFive::File::ReadWrite | HighFive::File::Create | HighFive::File::Truncate,
                                    HighFive::MPIOFileDriver(comm, MPI_INFO_NULL) };
 
+            // creating data sets for global information on all processes
+            std::vector<keytype> ranges {};
+            tree->getRanges(ranges);
+            HighFive::DataSet rangesDataSet = h5File.createDataSet<keytype>("/ranges", HighFive::DataSpace::From(ranges));
+
+            HighFive::DataSet tDataSet = h5File.createDataSet<double>("/t", HighFive::DataSpace::From(t));
+
+            double E_tot = tree->totalEnergy();
+            HighFive::DataSet energyDataSet = h5File.createDataSet<double>("/E_tot", HighFive::DataSpace::From(E_tot));
+            Logger(DEBUG) << "Total energy E_tot = " << E_tot;
+
+            std::vector<double> L_tot(global::dim, 0.);
+            tree->angularMomentum(L_tot);
+            Logger(DEBUG) << "Angular Momentum L_tot = ("
+                            << L_tot[0] << ", " << L_tot[1] << ", " << L_tot[2] << ")";
+            HighFive::DataSet angMomDataSet = h5File.createDataSet<double>("/L_tot", HighFive::DataSpace::From(L_tot));
+
+            if (myRank == 0){
+                rangesDataSet.write(ranges);
+                tDataSet.write(t);
+                energyDataSet.write(E_tot);
+                angMomDataSet.write(L_tot);
+            }
+
+            // each process writes its particle data
             HighFive::DataSet mDataSet = h5File.createDataSet<double>("/m", HighFive::DataSpace(N));
             HighFive::DataSet xDataSet = h5File.createDataSet<double>("/x", HighFive::DataSpace(dataSpaceDims));
             HighFive::DataSet vDataSet = h5File.createDataSet<double>("/v", HighFive::DataSpace(dataSpaceDims));
             HighFive::DataSet kDataSet = h5File.createDataSet<keytype>("/key", HighFive::DataSpace(N));
 
-            std::vector<keytype> ranges = tree->getRanges();
-            HighFive::DataSet rangesDataSet = h5File.createDataSet<keytype>("/ranges", HighFive::DataSpace::From(ranges));
-            // actually writing ranges only once
-            if (myRank == 0){
-                rangesDataSet.write(ranges);
-            }
-
             tree->dump2file(mDataSet, xDataSet, vDataSet, kDataSet);
             Logger(INFO) << "... done.";
         }
+
+        t += timeStep;
+        ++step;
         if (t >= timeEnd){
             Logger(INFO) << "Finished!";
             break;
         }
-
-        profiler.setStep(step);
-        t += timeStep;
-        ++step;
 
         Logger(INFO) << "Timestep t = " << t << " ...";
         Logger(DEBUG) << "\tComputing positions and updating tree ...";
@@ -137,7 +157,7 @@ void BarnesHut::run(){
         profiler.time2file(ProfilerIds::timeMove);
 
         if (parallel && step % loadBalancingInterval == 0){
-            Logger(INFO) << "\t... loadBalancing ...";
+            Logger(INFO) << "\t... load balancing ...";
             tree->newLoadDistribution();
         }
 
@@ -156,6 +176,9 @@ void BarnesHut::run(){
         profiler.time2file(ProfilerIds::timeVel);
         Logger(INFO) << "... done.";
 
-        profiler.value2file(ProfilerIds::N, tree->countParticles());
+        profiler.setStep(step);
+        N = tree->countParticles();
+        Logger(INFO) << "Total amount of particles in simulation domain N = " << N;
+        profiler.value2file(ProfilerIds::N, tree->getNumParticles());
     }
 }

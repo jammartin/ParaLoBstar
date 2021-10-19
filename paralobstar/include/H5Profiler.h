@@ -83,10 +83,10 @@ private:
     // basic containers for meta information
     HighFive::File h5file;
     std::unordered_map<std::string, HighFive::DataSet> dataSets {};
-    int myRank {};
-    int numProcs {};
-    int step {};
-    bool disabled {};
+    int myRank;
+    int numProcs;
+    int step;
+    bool disabled;
 
     // timing variables
     std::unordered_map<std::string, double> timeStart {};

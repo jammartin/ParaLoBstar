@@ -50,7 +50,7 @@ def plotMaxOfProcs(h5file, path, axis, ylabel="Maximum of all processes"):
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description="Plot performance data for BarnesHutParallel.")
+    parser = argparse.ArgumentParser(description="Plot profifling data for paralobstar.")
     parser.add_argument("--h5path", metavar="str", type=str, help="h5 file path to the data to plot",
                         nargs="?", default="general/numberOfParticles")
     parser.add_argument("--time", "-t", action="store_true", help="plotting time instead of amounts")

@@ -61,6 +61,7 @@ void Tree::forceBH(TreeNode &leaf, TreeNode &t, double l){
         distance = sqrt(distance);
         if (t.isLeaf() || l < theta * distance){
             leaf.p.force(t.p);
+            leaf.p.U += -.5 * global::G*leaf.p.m*t.p.m/distance; // track gravitational energy on the fly
         } else {
             for (int i=0; i<global::powdim; ++i){
                 if (t.son[i] != nullptr){
@@ -72,9 +73,9 @@ void Tree::forceBH(TreeNode &leaf, TreeNode &t, double l){
 }
 
 int Tree::countParticles(){
-    int N_ = 0;
-    countParticles(root, N_);
-    return N_;
+    numParticles = 0;
+    countParticles(root, numParticles);
+    return numParticles;
 }
 
 void Tree::countParticles(TreeNode &t, int &N){
@@ -86,9 +87,50 @@ void Tree::countParticles(TreeNode &t, int &N){
     if (t.type == NodeType::particle && t.isLeaf()) ++N;
 }
 
-std::vector<keytype> Tree::getRanges(){
-    std::vector<keytype> rangesVec_ { 0UL, keyMax };
-    return rangesVec_;
+// compForce() has to be called before
+double Tree::totalEnergy(){
+    double E_ = 0.;
+    compEnergy(E_, root);
+    return E_;
+}
+
+void Tree::compEnergy(double &E, TreeNode &t){
+    for (int i=0; i<global::powdim; ++i){
+        if (t.son[i] != nullptr){
+            compEnergy(E, *t.son[i]);
+        }
+    }
+    if (t.type == NodeType::particle && t.isLeaf()){
+        double vSqr = 0.;
+        for (int d=0; d<global::dim; ++d){
+            vSqr += pow(t.p.v[d], 2.);
+        }
+        E += t.p.U + .5 * t.p.m * vSqr; // adding potential energy and kinetic energy for each particle
+    }
+}
+
+void Tree::angularMomentum(std::vector<double> &L){
+    compAngularMomentum(L, root);
+}
+
+void Tree::compAngularMomentum(std::vector<double> &L, TreeNode &t){
+    for (int i=0; i<global::powdim; ++i){
+        if (t.son[i] != nullptr){
+            compAngularMomentum(L, *t.son[i]);
+        }
+    }
+    if (t.type == NodeType::particle && t.isLeaf()){
+        // Note: only works for three dimensions
+        for (int d=0; d<global::dim; ++d){
+            int i = lookup::VectorProduct[d][0];
+            int j = lookup::VectorProduct[d][1];
+            L[d] += t.p.m * (t.p.x[i] * t.p.v[j] - t.p.x[j] * t.p.v[i]);
+        }
+    }
+}
+
+void Tree::getRanges(std::vector<keytype> &ranges){
+    ranges.assign({ 0UL, keyMax }); // dummy ranges
 }
 
 void Tree::deallocate(TreeNode &t){

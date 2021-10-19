@@ -32,6 +32,19 @@ keytype SubDomainTree::Lebesgue2Hilbert(keytype lebesgue, int level){
     return hilbert;
 }
 
+std::string SubDomainTree::key2str(const keytype &key){
+    int levels[global::maxTreeLvl];
+    for (int lvl=0; lvl<global::maxTreeLvl; ++lvl) {
+        levels[lvl] = (key >> global::dim*lvl) & (keytype)7;
+    }
+    std::string str_ = "#|";
+    for (int rLvl=global::maxTreeLvl-1; rLvl>=0; --rLvl) {
+        str_ += std::to_string(levels[rLvl]);
+        str_ += "|";
+    }
+    return str_;
+}
+
 void SubDomainTree::insertParticle(Particle &p, TreeNode &t) {
     Box sonBox {};
     int i = t.box.sonBoxAndIndex(sonBox, p);
@@ -215,11 +228,12 @@ void SubDomainTree::compForce(TreeNode &t, keytype k, int lvl){
             compForce(*t.son[i], k | ((keytype)i << (global::dim*(global::maxTreeLvl-lvl-1))), lvl+1);
         }
     }
-    if (key2proc(getKey(k, lvl)) == myRank && t.type != NodeType::commonCoarse && t.isLeaf()){
+    if (key2proc(getKey(k, lvl)) == myRank && t.type == NodeType::particle && t.isLeaf()){
         // actual force calculation
         for (int d=0; d<global::dim; ++d){
             t.p.F[d] = 0.;
         }
+        t.p.U = 0.; // reset particle's energy
         forceBH(t, root, root.box.getLength());
     }
 }
@@ -406,7 +420,7 @@ int SubDomainTree::particleExchange(std::vector<Particle> *&particles2send, Part
         }
     }
 
-    Logger(INFO) << "particleExchange(): Receiving " << totalReceiveLength_ << " particles in total ...";
+    Logger(DEBUG) << "particleExchange(): Receiving " << totalReceiveLength_ << " particles in total ...";
 
     particles2receive = new Particle[totalReceiveLength_];
 
@@ -424,7 +438,7 @@ int SubDomainTree::particleExchange(std::vector<Particle> *&particles2send, Part
 
     mpi::wait_all(reqParticles.begin(), reqParticles.end());
 
-    Logger(INFO) << "                 ... done.";
+    Logger(DEBUG) << "                 ... done.";
 
     delete [] receiveLengths;
     delete [] sendLengths;
@@ -471,8 +485,7 @@ void SubDomainTree::clearCommonCoarseTree(TreeNode &t){
 }
 
 void SubDomainTree::guessRanges(){
-    numParticles = 0;
-    Tree::countParticles(root, numParticles);
+    numParticles = Tree::countParticles();
     Logger(DEBUG) << "\tNumber of particles on process = " << numParticles;
     int pCounter = 0;
     int rangeIndex = 1;
@@ -480,7 +493,7 @@ void SubDomainTree::guessRanges(){
 
     Logger(DEBUG) << "\tGuessed ranges on process:";
     for (int j=0; j<=numProcs; ++j){
-        Logger(DEBUG) << "\t\trange[" << j << "] = " << range[j];
+        Logger(DEBUG) << "\t\trange[" << j << "] = " << key2str(range[j]);
     }
 
     keytype sendRange[numProcs+1];
@@ -494,7 +507,7 @@ void SubDomainTree::guessRanges(){
 
     Logger(INFO) << "Averaged guessed ranges:";
     for (int j=0; j<=numProcs; ++j){
-        Logger(INFO) << "\trange[" << j << "] = " << range[j];
+        Logger(INFO) << "\trange[" << j << "] = " << key2str(range[j]);
     }
 }
 
@@ -561,7 +574,7 @@ void SubDomainTree::newLoadDistribution(){
 
     Logger(INFO) << "New ranges:";
     for (int j=0; j<=numProcs; ++j){
-        Logger(INFO) << "\trange[" << j << "] = " << range[j];
+        Logger(INFO) << "\trange[" << j << "] = " << key2str(range[j]);
     }
 
     sendParticles();
@@ -606,16 +619,28 @@ int SubDomainTree::key2proc(keytype key){
     for (int j=0; j<numProcs; ++j){
         if (key >= range[j] && key < range[j+1]) return j;
     }
-    Logger(ERROR) << "key2proc(): Key " << key << " cannot be assigned to any process.";
+    Logger(ERROR) << "key2proc(): Key " << key2str(key) << " cannot be assigned to any process.";
     return -1;
 }
 
 int SubDomainTree::countParticles(){
-    numParticles = 0;
-    Tree::countParticles(root, numParticles);
+    Tree::countParticles(); // sets numParticles
     int N_ = 0;
-    mpi::all_reduce(comm, numParticles, N_, std::plus<keytype>());
+    mpi::all_reduce(comm, numParticles, N_, std::plus<int>());
     return N_;
+}
+
+double SubDomainTree::totalEnergy(){
+    double E = Tree::totalEnergy();
+    double E_tot_ = 0;
+    mpi::all_reduce(comm, E, E_tot_, std::plus<double>());
+    return E_tot_;
+}
+
+void SubDomainTree::angularMomentum(std::vector<double> &L_tot){
+    std::vector<double> L(global::dim, 0.);
+    Tree::angularMomentum(L);
+    mpi::all_reduce(comm, L.data(), global::dim, L_tot.data(), std::plus<double>());
 }
 
 void SubDomainTree::dump2file(HighFive::DataSet &mDataSet, HighFive::DataSet &xDataSet,
@@ -670,8 +695,6 @@ void SubDomainTree::getParticleData(std::vector<double> &m,
     }
 }
 
-std::vector<keytype> SubDomainTree::getRanges(){
-    std::vector<keytype> rangesVec_ {};
-    rangesVec_.assign(range, range+numProcs+1);
-    return rangesVec_;
+void SubDomainTree::getRanges(std::vector<keytype> &ranges){
+    ranges.assign(range, range+numProcs+1);
 }

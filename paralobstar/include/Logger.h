@@ -8,8 +8,6 @@
 #include <iostream>
 #include <string>
 
-#include "global.h"
-
 namespace Color {
 
     enum Code {
@@ -73,27 +71,6 @@ public:
         }
         return *this;
     }
-
-    // TODO: rework
-    Logger &operator<<(const std::uint_fast64_t &key) {
-        int level = global::maxTreeLvl;
-        if (msglevel >= LOGCFG.level && (LOGCFG.myRank == LOGCFG.outputRank || LOGCFG.outputRank == -1)) {
-            int levels[level];
-            for (int i = 0; i<level; i++) {
-                levels[i] = (key >> global::dim*i) & (std::uint_fast64_t)7;
-            }
-            std::string msg = "#|";
-            for (int i = level-1; i>=0; i--) {
-                msg += std::to_string(levels[i]);
-                msg += "|";
-            }
-            std::cout << msg;
-            opened = true;
-        }
-        return *this;
-    }
-
-
 
 private:
     bool opened = false;

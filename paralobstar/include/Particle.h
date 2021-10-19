@@ -20,6 +20,7 @@ public:
     double Fn[global::dim] {}; // force last time step
     bool toDelete { false };
     bool moved { false };
+    double U { 0. }; // gravitational energy
 
     void force(Particle &p);
     void updateX(double dt);
@@ -30,6 +31,7 @@ private:
 
     template<class Archive>
     void serialize(Archive &ar, const unsigned int version) {
+        // TODO: check if performance can be improved relevantly when only fields needed are archived
         ar & m;
         ar & x;
         ar & v;
@@ -37,6 +39,7 @@ private:
         ar & Fn;
         ar & toDelete;
         ar & moved;
+        ar & U;
     }
 };
 

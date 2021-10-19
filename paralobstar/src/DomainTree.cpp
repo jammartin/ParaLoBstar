@@ -70,6 +70,7 @@ void DomainTree::compForce(TreeNode &t){
         for (int d=0; d<global::dim; ++d){
             t.p.F[d] = 0.;
         }
+        t.p.U = 0.; // reset particle's energy
         forceBH(t, root, root.box.getLength());
     }
 }

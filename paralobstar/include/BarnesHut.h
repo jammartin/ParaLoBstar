@@ -41,7 +41,7 @@ private:
     H5Profiler &profiler = H5Profiler::getInstance();
 
     // internal variables initialized in constructor
-    int N; // number of particles
+    int N; // total number of particles
     Particle *particles;
     Tree *tree;
 

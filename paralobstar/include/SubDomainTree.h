@@ -9,7 +9,6 @@
 #include <boost/mpi.hpp>
 
 #include "Tree.h"
-#include "lookup.h"
 
 namespace mpi = boost::mpi;
 
@@ -26,16 +25,17 @@ public:
     void sendParticles() override;
     void buildCommonCoarseTree() override;
     void newLoadDistribution() override;
-    std::vector<keytype> getRanges() override;
+    void getRanges(std::vector<keytype> &ranges) override;
     void moveParticles() override;
     int countParticles() override;
+    double totalEnergy() override;
+    void angularMomentum(std::vector<double> &L) override;
 
 private:
     mpi::communicator comm;
     int numProcs;
     int myRank;
     keytype *range;
-    int numParticles;
 
     static constexpr int mpiTag { 17 }; // arbitrary tag
 
@@ -43,6 +43,7 @@ private:
     static keytype Lebesgue(keytype k_, int _){ return k_; }
     static keytype Lebesgue2Hilbert(keytype lebesgue, int level);
     keytype (*getKey)(keytype, int){ &Lebesgue };
+    static std::string key2str(const keytype &key);
 
     void insertParticle(Particle &p, TreeNode &t) override;
     void insertSubTree(Particle &p, TreeNode &t);

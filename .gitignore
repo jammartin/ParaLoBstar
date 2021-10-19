@@ -42,5 +42,6 @@ bin/
 *.h5
 *.mp4
 output/
+log/
 
 

@@ -11,6 +11,7 @@
 
 #include "TreeNode.h"
 #include "Logger.h"
+#include "lookup.h"
 #include <highfive/H5File.hpp>
 
 typedef std::uint_fast64_t keytype;
@@ -31,7 +32,10 @@ public:
     void compVelocity();
     virtual void moveParticles();
     virtual int countParticles();
-    virtual std::vector<keytype> getRanges();
+    virtual double totalEnergy();
+    virtual void angularMomentum(std::vector<double> &L_tot);
+    virtual void getRanges(std::vector<keytype> &ranges);
+    int getNumParticles() const { return numParticles; }
 
     // placeholders for functions only implemented by SubDomainTree for the parallel mode
     virtual void guessRanges(){}
@@ -45,8 +49,8 @@ protected:
     TreeNode root {};
     double theta;
     double timeStep;
+    int numParticles;
 
-    void countParticles(TreeNode &t, int &N);
     void forceBH(TreeNode &leaf, TreeNode &t, double l);
 
 
@@ -56,6 +60,10 @@ private:
     virtual void compVelocity(TreeNode &t) = 0;
     virtual void moveParticles(TreeNode &t) = 0;
     virtual void repair(TreeNode &t) = 0;
+
+    void compEnergy(double &E, TreeNode &t);
+    void compAngularMomentum(std::vector<double> &L, TreeNode &t);
+    void countParticles(TreeNode &t, int &N);
 
     void resetFlags(TreeNode &t);
     void deallocate(TreeNode &t);

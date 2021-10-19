@@ -1,10 +1,10 @@
 domainSize 50.
-initFile plummerN10000seed3777336863.h5
+initFile plummerN100seed3541466422.h5
 parallel true
 timeStep .001
-timeEnd 1.
-theta .6
+timeEnd 10.
+theta 0.
 hilbert true
-h5DumpInterval 50
+h5DumpInterval 5
 loadBalancingInterval 10
-outputRank -1
+outputRank 1
