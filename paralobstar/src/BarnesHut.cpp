@@ -6,6 +6,7 @@
 
 BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("domainSize") },
                                            initFile { confP.getVal<std::string>("initFile") },
+                                           outDir { confP.getVal<std::string>("outDir") },
                                            parallel { confP.getVal<bool>("parallel") },
                                            timeStep { confP.getVal<double>("timeStep") },
                                            timeEnd { confP.getVal<double>("timeEnd") },
@@ -21,7 +22,7 @@ BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("do
     N = initDist.getNumberOfParticles();
     Logger(INFO) << "... done. Total number of particles N = " << N;
 
-    int steps = (int)round(timeEnd/timeStep);
+    steps = (int)round(timeEnd/timeStep);
     Logger(INFO) << "Number of time steps = " << steps;
 
     // Initialize profiler data sets for both serial and parallel mode
@@ -89,7 +90,7 @@ BarnesHut::~BarnesHut(){
 void BarnesHut::run(){
     double t = 0.;
     int step = 0;
-    while (t <= timeEnd){
+    while (step <= steps){
         if (step % h5DumpInterval == 0){
             Logger(INFO) << "Dumping particles to h5 ...";
             N = tree->countParticles();
@@ -101,7 +102,7 @@ void BarnesHut::run(){
 
             std::stringstream stepss;
             stepss << std::setw(6) << std::setfill('0') << step;
-            HighFive::File h5File {"output/ts" + stepss.str() + ".h5",
+            HighFive::File h5File { outDir + "/ts" + stepss.str() + ".h5",
                                    HighFive::File::ReadWrite | HighFive::File::Create | HighFive::File::Truncate,
                                    HighFive::MPIOFileDriver(comm, MPI_INFO_NULL) };
 
@@ -141,7 +142,7 @@ void BarnesHut::run(){
 
         t += timeStep;
         ++step;
-        if (t >= timeEnd){
+        if (step > steps){
             Logger(INFO) << "Finished!";
             break;
         }

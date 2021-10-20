@@ -489,20 +489,27 @@ void SubDomainTree::guessRanges(){
     Logger(DEBUG) << "\tNumber of particles on process = " << numParticles;
     int pCounter = 0;
     int rangeIndex = 1;
-    guessRanges(pCounter, rangeIndex, root, 0UL, 0);
+    int maxLvl = 0;
+    guessRanges(maxLvl, pCounter, rangeIndex, root, 0UL, 0);
 
     Logger(DEBUG) << "\tGuessed ranges on process:";
-    for (int j=0; j<=numProcs; ++j){
+    for (int j=1; j<numProcs; ++j){
         Logger(DEBUG) << "\t\trange[" << j << "] = " << key2str(range[j]);
     }
 
     keytype sendRange[numProcs+1];
-    for (int j=0; j<=numProcs; ++j){
+    for (int j=1; j<numProcs; ++j){
         sendRange[j] = range[j]/numProcs;
     }
-
     mpi::all_reduce(comm, sendRange, numProcs+1, range, std::plus<keytype>());
+
+    int maxLevel = 0;
+    mpi::all_reduce(comm, maxLvl, maxLevel, mpi::maximum<keytype>());
     range[0] = 0UL;
+    for (int j=1; j<numProcs; ++j){
+        // cutting off trailing bits of ranges to avoid the creation of unnecessary common coarse nodes
+        range[j] = range[j] & (keyMax << ((global::maxTreeLvl-maxLevel)*global::dim));
+    }
     range[numProcs] = keyMax;
 
     Logger(INFO) << "Averaged guessed ranges:";
@@ -511,7 +518,7 @@ void SubDomainTree::guessRanges(){
     }
 }
 
-void SubDomainTree::guessRanges(int &pCounter, int &rangeIndex, TreeNode &t, keytype k, int lvl){
+void SubDomainTree::guessRanges(int &maxLvl, int &pCounter, int &rangeIndex, TreeNode &t, keytype k, int lvl){
     if (hilbertFlag){
         std::map<keytype, int> keyMap;
         for (int i = 0; i < global::powdim; ++i) {
@@ -522,14 +529,14 @@ void SubDomainTree::guessRanges(int &pCounter, int &rangeIndex, TreeNode &t, key
         // actual recursion in correct order
         for (std::map<keytype, int>::iterator kIt = keyMap.begin(); kIt != keyMap.end(); ++kIt){
             if (t.son[kIt->second] != nullptr && rangeIndex < numProcs){
-                guessRanges(pCounter, rangeIndex, *t.son[kIt->second],
+                guessRanges(maxLvl, pCounter, rangeIndex, *t.son[kIt->second],
                             k | ((keytype)kIt->second << (global::dim*(global::maxTreeLvl-lvl-1))), lvl+1);
             }
         }
     } else {
         for (int i=0; i<global::powdim; ++i){
             if (t.son[i] != nullptr && rangeIndex < numProcs){ // range[numProcs] is set manually to keyMax
-                guessRanges(pCounter, rangeIndex, *t.son[i],
+                guessRanges(maxLvl, pCounter, rangeIndex, *t.son[i],
                             k | ((keytype)i << (global::dim*(global::maxTreeLvl-lvl-1))), lvl+1);
             }
         }
@@ -537,6 +544,7 @@ void SubDomainTree::guessRanges(int &pCounter, int &rangeIndex, TreeNode &t, key
     if (t.type == NodeType::particle && t.isLeaf()){
         ++pCounter;
         if (pCounter > round((double)numParticles/(double)numProcs)*rangeIndex){
+            maxLvl = lvl > maxLvl ? lvl : maxLvl;
             range[rangeIndex] = getKey(k, lvl);
             ++rangeIndex;
         }
@@ -691,7 +699,7 @@ void SubDomainTree::getParticleData(std::vector<double> &m,
         }
         x.push_back(xBuffer);
         v.push_back(vBuffer);
-        keys.push_back(k);
+        keys.push_back(getKey(k, lvl));
     }
 }
 

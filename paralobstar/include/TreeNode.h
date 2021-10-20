@@ -22,7 +22,7 @@ public:
 
     TreeNode();
 
-    bool isEmpty() const { return p.m < 0.; }
+    bool isEmpty() const { return p.m <= 0.; }
     bool isLeaf();
     bool isCommonCoarseLeaf();
 

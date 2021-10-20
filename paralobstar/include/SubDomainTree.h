@@ -58,7 +58,7 @@ private:
     void compPosition(TreeNode &t) override;
     void compVelocity(TreeNode &t) override;
     void moveParticles(TreeNode &t) override;
-    void guessRanges(int &pCounter, int &rangeIndex, TreeNode &t, keytype k, int lvl);
+    void guessRanges(int &maxLvl, int &pCounter, int &rangeIndex, TreeNode &t, keytype k, int lvl);
     void updateRanges(int &myDistr, int &rangeIndex, int newDistribution[], TreeNode &t, keytype k, int lvl);
     int key2proc(keytype k);
     void fillSendVectors(std::vector<Particle> *&particles2send, TreeNode &t, keytype k, int lvl);

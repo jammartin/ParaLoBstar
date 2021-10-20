@@ -24,13 +24,14 @@ public:
 
 private:
     // values read in from config file
-    double domainSize {};
-    std::string initFile {};
-    bool parallel {};
-    double timeStep {};
-    double timeEnd {};
-    int h5DumpInterval {};
-    int loadBalancingInterval {};
+    double domainSize;
+    std::string initFile;
+    std::string outDir;
+    bool parallel;
+    double timeStep;
+    double timeEnd;
+    int h5DumpInterval;
+    int loadBalancingInterval;
 
     // mpi related variables
     mpi::communicator comm;
@@ -42,6 +43,7 @@ private:
 
     // internal variables initialized in constructor
     int N; // total number of particles
+    int steps;
     Particle *particles;
     Tree *tree;
 

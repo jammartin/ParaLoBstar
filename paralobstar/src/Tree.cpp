@@ -59,7 +59,7 @@ void Tree::forceBH(TreeNode &leaf, TreeNode &t, double l){
             distance += pow(t.p.x[d] - leaf.p.x[d], 2.);
         }
         distance = sqrt(distance);
-        if (t.isLeaf() || l < theta * distance){
+        if ((t.isLeaf() || l < theta * distance) && !t.isEmpty()){ // skip empty domain list nodes
             leaf.p.force(t.p);
             leaf.p.U += -.5 * global::G*leaf.p.m*t.p.m/distance; // track gravitational energy on the fly
         } else {
