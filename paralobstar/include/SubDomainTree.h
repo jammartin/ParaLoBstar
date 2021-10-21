@@ -22,8 +22,6 @@ public:
     void dump2file(HighFive::DataSet &mDataSet, HighFive::DataSet &xDataSet, HighFive::DataSet &vDataSet,
                    HighFive::DataSet &kDataSet) override;
     void guessRanges() override;
-    void sendParticles() override;
-    void buildCommonCoarseTree() override;
     void newLoadDistribution() override;
     void getRanges(std::vector<keytype> &ranges) override;
     void moveParticles() override;
@@ -59,6 +57,8 @@ private:
     void compVelocity(TreeNode &t) override;
     void moveParticles(TreeNode &t) override;
     void guessRanges(int &maxLvl, int &pCounter, int &rangeIndex, TreeNode &t, keytype k, int lvl);
+    void sendParticles();
+    void buildCommonCoarseTree();
     void updateRanges(int &myDistr, int &rangeIndex, int newDistribution[], TreeNode &t, keytype k, int lvl);
     int key2proc(keytype k);
     void fillSendVectors(std::vector<Particle> *&particles2send, TreeNode &t, keytype k, int lvl);

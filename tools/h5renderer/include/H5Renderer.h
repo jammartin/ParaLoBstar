@@ -26,6 +26,7 @@ struct ColorRGB {
     ColorRGB(char _r, char _g, char _b) : r { _r }, g { _g }, b { _b }{};
 };
 
+constexpr int NUM_COLORS { 10 };
 const ColorRGB COLORS[10] = {
         ColorRGB(0, ~0, 0), // green
         ColorRGB(0, 0, ~0), // blue
@@ -50,7 +51,7 @@ private:
     const double zoom;
 
     // constants
-    static constexpr double SCALE2FIT = .95;
+    static constexpr double SCALE2FIT { .95 };
 
     // internal variables
     std::vector<fs::path> h5files;

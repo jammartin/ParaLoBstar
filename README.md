@@ -55,6 +55,7 @@ $ make
 $ make debug
 $ make binac
 ```
+**Note:** Before using `make [TARGET]` on BinAC you might want to `source binacLoadModules.sh` or `module load mpi/openmpi/4.1-gnu-9.2` to load the MPI compiler `mpic++`.
 
 ## Running simulations
 
@@ -76,6 +77,7 @@ The simulation parameters are read from a configuration file, which must be prov
 ```
 domainSize 50.
 initFile plummerN10000seed3777336863.h5
+outDir output
 parallel true
 timeStep .001
 timeEnd 20.

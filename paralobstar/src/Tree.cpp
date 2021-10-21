@@ -13,6 +13,7 @@ Tree::Tree(double domainSize, double _theta, double _timeStep) : theta { _theta 
 
 Tree::~Tree(){
     deallocate(root);
+    Logger(DEBUG) << "Tree destroyed.";
 }
 
 void Tree::insertParticle(Particle &p){

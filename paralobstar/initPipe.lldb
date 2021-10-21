@@ -1,9 +1,10 @@
 file bin/paralobstar
 
 # Setting breakpoints
-#b SubDomainTree.cpp:622
-#b BarnesHut.cpp:101
+b SubDomainTree.cpp:222
+b SubDomainTree.cpp:345
+b SubDomainTree.cpp:352
+#b BarnesHut.cpp:75
 #br dis 1
-b Tree.cpp:127
 
 run -v

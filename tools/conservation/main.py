@@ -54,11 +54,12 @@ if __name__ == "__main__":
         ax1.set_title("Total energy and mass")
         ax1.set_ylabel("Energy")
     
-        ax1.plot(time, energy)
+        ax1.plot(time, energy, "r-", label="E_tot")
 
         ax2 = ax1.twinx()
-        ax2.plot(time, mass)
+        ax2.plot(time, mass, "b-", label="M")
         ax2.set_ylabel("Mass")
 
         fig.tight_layout()
+        fig.legend()
         plt.savefig("output/energy_mass.png")

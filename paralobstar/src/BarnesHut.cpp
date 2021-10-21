@@ -64,11 +64,9 @@ BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("do
     delete [] particles;
 
     if (parallel){
-        tree->guessRanges();
-        Logger(INFO) << "...done. Sending particles ...";
-        tree->sendParticles();
-        Logger(INFO) << "...done. Building common coarse tree ...";
-        tree->buildCommonCoarseTree();
+        Logger(INFO) << "...done. Creating load distribution via space-filling curves ...";
+        tree->guessRanges(); // guessing some ranges
+        tree->newLoadDistribution();
     }
 
     Logger(INFO) << "... done. Computing pseudo-particles ...";

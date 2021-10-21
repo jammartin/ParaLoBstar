@@ -207,6 +207,8 @@ void SubDomainTree::compForce(){
         }
     }
 
+    delete [] particles2send;
+
     Particle *particles2receive;
     int totalReceiveLength = particleExchange(particles4procs, particles2receive);
 
@@ -216,10 +218,10 @@ void SubDomainTree::compForce(){
         insertSubTree(particles2receive[i], root);
     }
 
+    delete[] particles2receive;
+
     compForce(root, 0UL, 0);
     repair(root);
-
-    delete[] particles2receive;
 }
 
 void SubDomainTree::compForce(TreeNode &t, keytype k, int lvl){
@@ -310,7 +312,7 @@ void SubDomainTree::moveParticles(TreeNode &t){
                 insertParticle(t.p, root);
                 t.p.toDelete = true;
             } else {
-                Logger(DEBUG) << "\t\tmoveLeaves(): Particle left system. x = ("
+                Logger(WARN) << "\t\tmoveLeaves(): Particle left system. x = ("
                               << t.p.x[0] << ", " << t.p.x[1] << ", " << t.p.x[2] << ")";
                 t.p.toDelete = true;
             }
@@ -339,7 +341,7 @@ void SubDomainTree::repair(TreeNode &t){
             }
         }
         if (t.type != NodeType::commonCoarse){
-            if (numberOfSons == 0){
+            if (numberOfSons == 0 && t.type != NodeType::particle){
                 t.p.toDelete = true;
             } else if (numberOfSons == 1 && t.son[sonIndex]->isLeaf()){
                 t.p = t.son[sonIndex]->p;
@@ -516,6 +518,8 @@ void SubDomainTree::guessRanges(){
     for (int j=0; j<=numProcs; ++j){
         Logger(INFO) << "\trange[" << j << "] = " << key2str(range[j]);
     }
+
+    sendParticles();
 }
 
 void SubDomainTree::guessRanges(int &maxLvl, int &pCounter, int &rangeIndex, TreeNode &t, keytype k, int lvl){

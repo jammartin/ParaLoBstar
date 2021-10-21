@@ -111,6 +111,7 @@ ColorRGB H5Renderer::procColor(unsigned long k, const std::vector<unsigned long>
     for(int proc=0; proc < ranges.size()-1; ++proc){
         if (ranges[proc] <= k && k < ranges[proc+1]){
             // particle belongs to process proc
+            proc %= NUM_COLORS;
             return COLORS[proc];
         }
     }

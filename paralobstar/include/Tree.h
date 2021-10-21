@@ -39,8 +39,6 @@ public:
 
     // placeholders for functions only implemented by SubDomainTree for the parallel mode
     virtual void guessRanges(){}
-    virtual void sendParticles(){}
-    virtual void buildCommonCoarseTree(){}
     virtual void newLoadDistribution(){}
 
 
