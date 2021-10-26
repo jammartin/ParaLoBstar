@@ -29,6 +29,7 @@ int main(int argc, char *argv[]){
             ("c,config", "Path to config file", cxxopts::value<std::string>()->default_value("config.info"))
             ("p,profiling", "Path to h5 profiling file", cxxopts::value<std::string>()->default_value("profiling.h5"))
             ("v,verbose", "More printouts for debugging")
+            ("s,silent", "Suppress normal printouts")
             ("h,help", "Show this help");
 
     auto cmdLineOpts = cmdLineOptions.parse(argc, argv);
@@ -45,6 +46,14 @@ int main(int argc, char *argv[]){
     LOGCFG.level = cmdLineOpts.count("verbose") ? DEBUG : INFO;
     LOGCFG.myRank = myRank;
     LOGCFG.outputRank = configParser.getVal<int>("outputRank");
+
+    if (cmdLineOpts.count("silent")){
+        if(cmdLineOpts.count("verbose")){
+            throw std::invalid_argument("Command line options -s and -v are incompatible");
+        } else {
+            LOGCFG.level = WARN;
+        }
+    }
 
     // create singleton instance
     H5Profiler::getInstance(cmdLineOpts["profiling"].as<std::string>(), myRank, numProcs);

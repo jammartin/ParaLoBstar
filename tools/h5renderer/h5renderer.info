@@ -1,3 +1,4 @@
-h5folder /Users/johannes/git/ParaLoBstar/paralobstar/output
+;h5folder /Users/johannes/git/ParaLoBstar/paralobstar/output
+h5folder /Users/johannes/git/ParaLoBstar/validation/plSeN4096th1_0
 domainSize 3. # system size as a cube
 imgHeight 720 # width = 2*height, specified in pixel

@@ -13,7 +13,7 @@ if __name__ == "__main__":
     parser.add_argument("--data", "-d", metavar="str", type=str, help="output data directory of paralobstar",
                         nargs="?", default="../../paralobstar/output")
     parser.add_argument("--angular_momentum", "-L", action="store_true", help="plot angular momentum (defaul: energy and mass)")
-    parser.add_argument("--mass_quantiles", "-Q", action="store_true", help="plot 10%, 50% & 90% mass quantiles (default: energy and mass)")
+    parser.add_argument("--mass_quantiles", "-Q", action="store_true", help="plot 10, 50 and 90 percent mass quantiles (default: energy and mass)")
 
     args = parser.parse_args()
 
@@ -29,11 +29,12 @@ if __name__ == "__main__":
         data = h5py.File(h5file, 'r')
         time.append(data["t"][()])
         energy.append(data["E_tot"][()])
-        mass.append(np.sum(data["m"][:]))
-        angular_momentum.append(np.array(data["L_tot"][:]))
 
-        # computation intensive
-        if args.mass_quantiles:
+        if args.angular_momentum:
+            print("... reading angular momentum ...")
+            angular_momentum.append(np.array(data["L_tot"][:]))
+
+        elif args.mass_quantiles:
             print("... computing mass quantiles ...")
             vecs2com = data["x"][:] - data["COM"][:]
             radii = np.linalg.norm(vecs2com, axis=1)
@@ -44,6 +45,10 @@ if __name__ == "__main__":
                 radii[int(np.ceil(.1 * numParticles))],
                 radii[int(np.ceil(.5 * numParticles))],
                 radii[int(np.ceil(.9 * numParticles))]]))
+        else:
+            print("... computing mass and reading energy ...")
+            mass.append(np.sum(data["m"][:]))
+            energy.append(data["E_tot"][()])
         
         print("... done.")
                     

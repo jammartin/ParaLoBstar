@@ -14,6 +14,7 @@ void Particle::force(Particle &p, double softening){
     for (int d=0; d<global::dim; ++d){
         F[d] += f * (p.x[d] - x[d]);
     }
+    U += -.5 * global::G * m * p.m / sqrt(dsqr); // track gravitational energy
 }
 
 void Particle::updateX(double dt){

@@ -79,7 +79,8 @@ BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("do
     N = tree->countParticles();
     profiler.value2file(ProfilerIds::N, tree->getNumParticles());
 
-    Logger(INFO) << "... done. Initialization finished!";
+    Logger(INFO) << "... done.";
+    Logger(WARN) << "Initialization finished! N = " << N;
 }
 
 BarnesHut::~BarnesHut(){
@@ -147,7 +148,7 @@ void BarnesHut::run(){
         t += timeStep;
         ++step;
         if (step > steps){
-            Logger(INFO) << "Finished!";
+            Logger(WARN) << "Finished! N = " << N;
             break;
         }
 

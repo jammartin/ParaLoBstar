@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+ffmpeg -i $1 -i $2 -i $3 -filter_complex vstack=inputs=3 vstackMovie.mp4

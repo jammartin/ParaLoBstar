@@ -67,6 +67,7 @@ Usage:
   -c, --config arg     Path to config file (default: config.info)
   -p, --profiling arg  Path to h5 profiling file (default: profiling.h5)
   -v, --verbose        More printouts for debugging
+  -s, --silent         Suppress normal printouts
   -h, --help           Show this help
 ```
 
@@ -82,6 +83,7 @@ parallel true
 timeStep .001
 timeEnd 20.
 theta .6
+softening 0.01
 hilbert true
 h5DumpInterval 50
 loadBalancingInterval 10

@@ -88,8 +88,6 @@ void Tree::forceBH(TreeNode &leaf, TreeNode &t, double l){
         distance = sqrt(distance);
         if ((t.isLeaf() || l < theta * distance) && !t.isEmpty()){ // skip empty domain list nodes
             leaf.p.force(t.p, softening);
-            // TODO: check if softening should be included in the potential energy
-            leaf.p.U += -.5 * global::G*leaf.p.m*t.p.m/distance; // track gravitational energy on the fly
         } else {
             for (int i=0; i<global::powdim; ++i){
                 if (t.son[i] != nullptr){

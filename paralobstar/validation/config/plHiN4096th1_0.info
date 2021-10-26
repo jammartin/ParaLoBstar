@@ -1,5 +1,5 @@
-domainSize 3.
-initFile plummerN4096seed1769728180.h5
+domainSize 5.
+initFile plummerN4096seed3517298201.h5
 outDir plHiN4096th1_0
 parallel true
 timeStep .025
@@ -9,4 +9,4 @@ softening .032
 hilbert true
 h5DumpInterval 1
 loadBalancingInterval 10
-outputRank 0
+outputRank -1
