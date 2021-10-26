@@ -4,11 +4,12 @@
 
 #include "../include/Particle.h"
 
-void Particle::force(Particle &p){
+void Particle::force(Particle &p, double softening){
     double dsqr = 0.;
     for (int d=0; d<global::dim; ++d){
         dsqr += pow(p.x[d] - x[d], 2.);
     }
+    dsqr += pow(softening, 2.);
     double f = global::G * m * p.m / (sqrt(dsqr) * dsqr);
     for (int d=0; d<global::dim; ++d){
         F[d] += f * (p.x[d] - x[d]);

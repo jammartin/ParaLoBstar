@@ -4,9 +4,10 @@
 
 #include "../include/DomainTree.h"
 
-DomainTree::DomainTree(double domainSize, double theta, double timeStep) : Tree(domainSize, theta, timeStep){}
+DomainTree::DomainTree(double domainSize, double theta, double softening,
+                       double timeStep) : Tree(domainSize, theta, softening, timeStep){}
 
-void DomainTree::insertParticle(Particle &p, TreeNode &t){
+/*void DomainTree::insertParticle(Particle &p, TreeNode &t){
     Box sonBox {};
     int i = t.box.sonBoxAndIndex(sonBox, p);
     if (t.son[i] == nullptr){
@@ -24,7 +25,7 @@ void DomainTree::insertParticle(Particle &p, TreeNode &t){
     } else {
         insertParticle(p, *t.son[i]);
     }
-}
+}*/
 
 void DomainTree::compPseudoParticles(){
     compPseudoParticles(root);
@@ -110,8 +111,8 @@ void DomainTree::moveParticles(TreeNode &t){
                 insertParticle(t.p, root);
                 t.p.toDelete = true;
             } else {
-                Logger(DEBUG) << "\t\tmoveLeaves(): Particle left system. x = ("
-                              << t.p.x[0] << ", " << t.p.x[1] << ", " << t.p.x[2] << ")";
+                Logger(WARN) << "\t\tmoveParticles(): Particle left system. x = ("
+                             << t.p.x[0] << ", " << t.p.x[1] << ", " << t.p.x[2] << ")";
                 t.p.toDelete = true;
             }
         }
@@ -140,12 +141,12 @@ void DomainTree::repair(TreeNode &t){
         }
         if (numberOfSons == 0){
             t.p.toDelete = true;
-        } else if (numberOfSons == 1){
+        } else if (numberOfSons == 1 && t.son[sonIndex]->isLeaf()){
             t.p = t.son[sonIndex]->p;
-            if(t.son[sonIndex]->isLeaf()){
-                delete t.son[sonIndex];
-                t.son[sonIndex] = nullptr;
-            }
+            t.type = t.son[sonIndex]->type;
+            delete t.son[sonIndex];
+            t.son[sonIndex] = nullptr;
+
         }
     }
 }

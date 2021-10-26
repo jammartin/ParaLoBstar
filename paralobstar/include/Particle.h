@@ -22,7 +22,7 @@ public:
     bool moved { false };
     double U { 0. }; // gravitational energy
 
-    void force(Particle &p);
+    void force(Particle &p, double softening=0.);
     void updateX(double dt);
     void updateV(double dt);
 

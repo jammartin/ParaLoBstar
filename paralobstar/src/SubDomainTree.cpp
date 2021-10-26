@@ -4,7 +4,8 @@
 
 #include "../include/SubDomainTree.h"
 
-SubDomainTree::SubDomainTree(double domainSize, double theta, double timeStep, bool hilbert) : Tree(domainSize, theta, timeStep){
+SubDomainTree::SubDomainTree(double domainSize, double theta, double softening, double timeStep,
+                             bool hilbert) : Tree(domainSize, theta, softening, timeStep){
     numProcs = comm.size();
     myRank = comm.rank();
     range = new keytype[numProcs+1];
@@ -43,28 +44,6 @@ std::string SubDomainTree::key2str(const keytype &key){
         str_ += "|";
     }
     return str_;
-}
-
-void SubDomainTree::insertParticle(Particle &p, TreeNode &t) {
-    Box sonBox {};
-    int i = t.box.sonBoxAndIndex(sonBox, p);
-
-    if (t.son[i] == nullptr) {
-        if (t.type == NodeType::particle && t.isLeaf()) {
-            t.type = NodeType::pseudoParticle;
-            Particle pBuffer = t.p;
-            t.son[i] = new TreeNode();
-            t.son[i]->p = p;
-            t.son[i]->box = sonBox;
-            insertParticle(pBuffer, t);
-        } else {
-            t.son[i] = new TreeNode();
-            t.son[i]->p = p;
-            t.son[i]->box = sonBox;
-        }
-    } else {
-        insertParticle(p, *t.son[i]);
-    }
 }
 
 void SubDomainTree::insertSubTree(Particle &p, TreeNode &t) {
@@ -312,7 +291,7 @@ void SubDomainTree::moveParticles(TreeNode &t){
                 insertParticle(t.p, root);
                 t.p.toDelete = true;
             } else {
-                Logger(WARN) << "\t\tmoveLeaves(): Particle left system. x = ("
+                Logger(WARN) << "\t\tmoveParticles(): Particle left system. x = ("
                               << t.p.x[0] << ", " << t.p.x[1] << ", " << t.p.x[2] << ")";
                 t.p.toDelete = true;
             }
@@ -341,7 +320,7 @@ void SubDomainTree::repair(TreeNode &t){
             }
         }
         if (t.type != NodeType::commonCoarse){
-            if (numberOfSons == 0 && t.type != NodeType::particle){
+            if (numberOfSons == 0){ // && t.type != NodeType::particle){ // can't be particle because it's a leaf FUCK
                 t.p.toDelete = true;
             } else if (numberOfSons == 1 && t.son[sonIndex]->isLeaf()){
                 t.p = t.son[sonIndex]->p;

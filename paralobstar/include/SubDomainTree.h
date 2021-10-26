@@ -14,7 +14,7 @@ namespace mpi = boost::mpi;
 
 class SubDomainTree : public Tree {
 public:
-    SubDomainTree(double domainSize, double theta, double timeStep, bool hilbert);
+    SubDomainTree(double domainSize, double theta, double softening, double timeStep, bool hilbert);
     ~SubDomainTree();
 
     void compPseudoParticles() override;
@@ -43,7 +43,7 @@ private:
     keytype (*getKey)(keytype, int){ &Lebesgue };
     static std::string key2str(const keytype &key);
 
-    void insertParticle(Particle &p, TreeNode &t) override;
+    //void insertParticle(Particle &p, TreeNode &t) override;
     void insertSubTree(Particle &p, TreeNode &t);
     void compPseudoParticles(TreeNode &t);
     void fillCommonCoarseLeavesVector(std::vector<Particle> &ccLeaves2send, TreeNode &t);

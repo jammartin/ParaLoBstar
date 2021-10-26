@@ -9,7 +9,7 @@
 
 class DomainTree : public Tree {
 public:
-    DomainTree(double domainSize, double theta, double timeStep);
+    DomainTree(double domainSize, double theta, double softening, double timeStep);
 
     void compPseudoParticles() override;
     void compForce() override;
@@ -17,7 +17,7 @@ public:
                    HighFive::DataSet &vDataSet, HighFive::DataSet &kDataSet) override;
 
 private:
-    void insertParticle(Particle &p, TreeNode &t) override;
+    //void insertParticle(Particle &p, TreeNode &t) override;
     void compPseudoParticles(TreeNode &t);
     void compForce(TreeNode &t);
     void compPosition(TreeNode &t) override;

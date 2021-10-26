@@ -45,11 +45,12 @@ BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("do
 
     if (parallel && numProcs > 1){
         initDist.getParticles(particles, myRank*particlesPerProc, particlesPerProc);
-        tree = new SubDomainTree(domainSize, confP.getVal<double>("theta"), timeStep, confP.getVal<bool>("hilbert"));
+        tree = new SubDomainTree(domainSize, confP.getVal<double>("theta"),
+                                 confP.getVal<double>("softening"), timeStep, confP.getVal<bool>("hilbert"));
 
     } else if (!parallel && numProcs == 1){
         initDist.getAllParticles(particles);
-        tree = new DomainTree(domainSize,confP.getVal<double>("theta"), timeStep);
+        tree = new DomainTree(domainSize, confP.getVal<double>("theta"), confP.getVal<double>("softening"), timeStep);
 
     } else {
         Logger(ERROR) << "Serial execution with more than one process is not possible. Aborting.";
@@ -111,6 +112,10 @@ void BarnesHut::run(){
 
             HighFive::DataSet tDataSet = h5File.createDataSet<double>("/t", HighFive::DataSpace::From(t));
 
+            std::vector<double> com {};
+            tree->getCenterOfMass(com);
+            HighFive::DataSet comDataSet = h5File.createDataSet<double>("/COM", HighFive::DataSpace::From(com));
+
             double E_tot = tree->totalEnergy();
             HighFive::DataSet energyDataSet = h5File.createDataSet<double>("/E_tot", HighFive::DataSpace::From(E_tot));
             Logger(DEBUG) << "Total energy E_tot = " << E_tot;
@@ -124,6 +129,7 @@ void BarnesHut::run(){
             if (myRank == 0){
                 rangesDataSet.write(ranges);
                 tDataSet.write(t);
+                comDataSet.write(com);
                 energyDataSet.write(E_tot);
                 angMomDataSet.write(L_tot);
             }
@@ -152,6 +158,7 @@ void BarnesHut::run(){
         profiler.time2file(ProfilerIds::timePos);
 
         profiler.time(ProfilerIds::timeMove);
+
         tree->moveParticles();
         profiler.time2file(ProfilerIds::timeMove);
 

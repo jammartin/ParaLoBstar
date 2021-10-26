@@ -4,7 +4,8 @@
 
 #include "../include/Tree.h"
 
-Tree::Tree(double domainSize, double _theta, double _timeStep) : theta { _theta }, timeStep { _timeStep }{
+Tree::Tree(double domainSize, double _theta, double _softening,
+           double _timeStep) : theta { _theta }, softening { _softening }, timeStep { _timeStep }{
     for (int d=0; d<global::dim; ++d){
         root.box.lower[d] = - .5 * domainSize;
         root.box.upper[d] = .5 * domainSize;
@@ -24,8 +25,33 @@ void Tree::insertParticle(Particle &p){
             insertParticle(p, root);
         }
     } else {
-        Logger(WARN) << "insertTree(): Particle not in domain. x = ("
+        Logger(WARN) << "insertParticle(): Particle not in domain. x = ("
                      << p.x[0] << ", " << p.x[1] << ", " << p.x[2] << ")";
+    }
+}
+
+void Tree::insertParticle(Particle &p, TreeNode &t) {
+    Box sonBox {};
+    int i = t.box.sonBoxAndIndex(sonBox, p);
+
+    if (t.son[i] == nullptr) {
+        if (t.type == NodeType::particle){
+            t.type = NodeType::pseudoParticle;
+            Particle pBuffer = t.p;
+            t.son[i] = new TreeNode();
+            t.son[i]->p = p;
+            t.son[i]->box = sonBox;
+            insertParticle(pBuffer, t);
+            // needed if particle has been flagged for deletion in moveParticles()
+            // repair() will take care of deletion if necessary (numberOfSons == 1)
+            t.p.toDelete = false;
+        } else {
+            t.son[i] = new TreeNode();
+            t.son[i]->p = p;
+            t.son[i]->box = sonBox;
+        }
+    } else {
+        insertParticle(p, *t.son[i]);
     }
 }
 
@@ -61,7 +87,8 @@ void Tree::forceBH(TreeNode &leaf, TreeNode &t, double l){
         }
         distance = sqrt(distance);
         if ((t.isLeaf() || l < theta * distance) && !t.isEmpty()){ // skip empty domain list nodes
-            leaf.p.force(t.p);
+            leaf.p.force(t.p, softening);
+            // TODO: check if softening should be included in the potential energy
             leaf.p.U += -.5 * global::G*leaf.p.m*t.p.m/distance; // track gravitational energy on the fly
         } else {
             for (int i=0; i<global::powdim; ++i){
@@ -132,6 +159,10 @@ void Tree::compAngularMomentum(std::vector<double> &L, TreeNode &t){
 
 void Tree::getRanges(std::vector<keytype> &ranges){
     ranges.assign({ 0UL, keyMax }); // dummy ranges
+}
+
+void Tree::getCenterOfMass(std::vector<double> &com){
+    com.assign(root.p.x, root.p.x+global::dim);
 }
 
 void Tree::deallocate(TreeNode &t){

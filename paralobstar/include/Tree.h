@@ -19,7 +19,7 @@ typedef std::uint_fast64_t keytype;
 // abstract class
 class Tree {
 public:
-    Tree(double domainSize, double _theta, double _timeStep);
+    Tree(double domainSize, double _theta, double _softening, double _timeStep);
     virtual ~Tree();
 
     virtual void compPseudoParticles() = 0;
@@ -35,6 +35,7 @@ public:
     virtual double totalEnergy();
     virtual void angularMomentum(std::vector<double> &L_tot);
     virtual void getRanges(std::vector<keytype> &ranges);
+    void getCenterOfMass(std::vector<double> &com);
     int getNumParticles() const { return numParticles; }
 
     // placeholders for functions only implemented by SubDomainTree for the parallel mode
@@ -49,11 +50,13 @@ protected:
     double timeStep;
     int numParticles;
 
+    void insertParticle(Particle &p, TreeNode &t);
     void forceBH(TreeNode &leaf, TreeNode &t, double l);
 
 
 private:
-    virtual void insertParticle(Particle &p, TreeNode &t) = 0;
+    double softening;
+
     virtual void compPosition(TreeNode &t) = 0;
     virtual void compVelocity(TreeNode &t) = 0;
     virtual void moveParticles(TreeNode &t) = 0;
