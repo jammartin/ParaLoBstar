@@ -1,9 +1,9 @@
 #!/bin/bash
-#PBS -N plummerN1e4Hnp50
-#PBS -l nodes=2:ppn=25
-#PBS -l walltime=12:00:00
+#PBS -N plSeN4096th1_0
+#PBS -l nodes=1:ppn=1
+#PBS -l walltime=00:20:00
 #PBS -l pmem=1gb
-#PBS -q short
+#PBS -q tiny
 #PBS -m aeb -M johannes-stefan.martin@student.uni-tuebingen.de
 
 source ~/.bashrc
@@ -18,8 +18,11 @@ module load lib/hdf5/1.10.7-openmpi-3.1-gnu-9.2
 cd $PBS_O_WORKDIR
 echo $PBS_O_WORKDIR
 
+# creating output directory
+mkdir -p $PBS_JOBNAME
+
 # Starting program
-mpirun --bind-to core --map-by core -report-bindings bin/paralobstar -p log/plummerN1e4Hnp50.h5
+mpirun --bind-to core --map-by core -report-bindings ../bin/paralobstar -c config/$PBS_JOBNAME.info -p $PBS_JOBNAME.h5
 
 
 
