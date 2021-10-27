@@ -1,0 +1,12 @@
+domainSize 50.
+initFile INITFILE
+outDir OUTDIR
+parallel PARALLEL
+timeStep .025
+timeEnd 25.
+theta 1.
+softening .0001
+hilbert HILBERT
+h5DumpInterval 5
+loadBalancingInterval LBINTERVAL
+outputRank -1
