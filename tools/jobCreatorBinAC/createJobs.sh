@@ -25,7 +25,7 @@ echo "Creating configs and scripts in '$SIM_DIR/$INIT_FILE_STEM' ..."
 
 # creating submit script
 cp $WORKDIR/templates/submit.sh .
-echo "... submitting jobs ..." >> submit.sh
+echo "echo '... submitting jobs ...'" >> submit.sh
 
 # main loop
 for mode in "${modes[@]}"
@@ -105,7 +105,7 @@ do
 	done
     fi
 done
-echo "...done." >> submit.sh
+echo "echo '... done.'" >> submit.sh
 chmod u+x submit.sh
 echo "... done."
    

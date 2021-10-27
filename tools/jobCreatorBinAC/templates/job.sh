@@ -22,5 +22,5 @@ echo $PBS_O_WORKDIR
 mkdir -p $PBS_JOBNAME
 
 # Starting program
-mpirun --bind-to core --map-by core -report-bindings ../paralobstar/bin/paralobstar -c config/$PBS_JOBNAME.info -p $PBS_JOBNAME.h5 -s
+mpirun --bind-to core --map-by core -report-bindings ../../paralobstar/bin/paralobstar -c config/$PBS_JOBNAME.info -p $PBS_JOBNAME.h5 -s
 
