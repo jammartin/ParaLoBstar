@@ -17,13 +17,7 @@ public:
                    HighFive::DataSet &vDataSet, HighFive::DataSet &kDataSet) override;
 
 private:
-    //void insertParticle(Particle &p, TreeNode &t) override;
-    void compPseudoParticles(TreeNode &t);
     void compForce(TreeNode &t);
-    void compPosition(TreeNode &t) override;
-    void compVelocity(TreeNode &t) override;
-    void moveParticles(TreeNode &t) override;
-    void repair(TreeNode &t) override;
     void getParticleData(std::vector<double> &m,
                         std::vector<std::vector<double>> &x,
                         std::vector<std::vector<double>> &v,

@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 import h5py
 
 SHARE_COLORS = ["#00ff00", "#0000ff", "#ff007f", "#ffff00",
-                "#ff00ff", "#ff0000", "#00ffff", "#ff7f00"]
-LINE_COLOR = "#5f5f5f"
+                "#ff00ff", "#ff0000", "#00ffff", "#ff7f00", "#7f7f7f", "#ffffff"]
+LINE_COLOR = "#2f2f2f"
 
 
 def plotDataPerProcAsPercentage(h5file, path, axis, ylabel="Share per process"):

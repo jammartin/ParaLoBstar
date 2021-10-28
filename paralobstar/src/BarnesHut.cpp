@@ -25,6 +25,12 @@ BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("do
     steps = (int)round(timeEnd/timeStep);
     Logger(INFO) << "Number of time steps = " << steps;
 
+    if (steps % loadBalancingInterval != 0){
+        Logger(ERROR) << "Number of time steps (" << steps
+                      << ") must have load balancing interval (" << loadBalancingInterval << ") as divisor. Aborting.";
+        throw std::invalid_argument("Number of time steps must have load balancing interval as divisor.");
+    }
+
     // Initialize profiler data sets for both serial and parallel mode
     profiler.createValueDataSet<int>(ProfilerIds::N, steps+1);
     profiler.createTimeDataSet(ProfilerIds::timePos, steps);
@@ -32,6 +38,10 @@ BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("do
     profiler.createTimeDataSet(ProfilerIds::timePseudo, steps);
     profiler.createTimeDataSet(ProfilerIds::timeForce, steps);
     profiler.createTimeDataSet(ProfilerIds::timeVel, steps);
+    // Initialize only parallel mode data sets
+    profiler.createValueDataSet<int>(ProfilerIds::forceRcv, steps);
+    profiler.createTimeDataSet(ProfilerIds::timeLb, steps/loadBalancingInterval);
+    profiler.createValueDataSet<int>(ProfilerIds::lbRcv, steps/loadBalancingInterval);
 
     int particlesPerProc = N/numProcs;
 
@@ -43,12 +53,15 @@ BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("do
 
     particles = new Particle[particlesPerProc]; // allocate memory
 
-    if (parallel && numProcs > 1){
+    if (parallel){
+        if (numProcs == 1){
+            Logger(WARN) << "Parallel execution on one process is not intended. Use serial mode instead.";
+        }
         initDist.getParticles(particles, myRank*particlesPerProc, particlesPerProc);
         tree = new SubDomainTree(domainSize, confP.getVal<double>("theta"),
                                  confP.getVal<double>("softening"), timeStep, confP.getVal<bool>("hilbert"));
 
-    } else if (!parallel && numProcs == 1){
+    } else if (numProcs == 1){
         initDist.getAllParticles(particles);
         tree = new DomainTree(domainSize, confP.getVal<double>("theta"), confP.getVal<double>("softening"), timeStep);
 
@@ -64,6 +77,7 @@ BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("do
     }
     delete [] particles;
 
+    profiler.disableWrite();
     if (parallel){
         Logger(INFO) << "...done. Creating load distribution via space-filling curves ...";
         tree->guessRanges(); // guessing some ranges
@@ -76,6 +90,7 @@ BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("do
     Logger(INFO) << "... done. Computing forces ...";
     tree->compForce();
 
+    profiler.enableWrite();
     N = tree->countParticles();
     profiler.value2file(ProfilerIds::N, tree->getNumParticles());
 
@@ -159,13 +174,16 @@ void BarnesHut::run(){
         profiler.time2file(ProfilerIds::timePos);
 
         profiler.time(ProfilerIds::timeMove);
-
         tree->moveParticles();
         profiler.time2file(ProfilerIds::timeMove);
 
         if (parallel && step % loadBalancingInterval == 0){
             Logger(INFO) << "\t... load balancing ...";
+            profiler.setStep(step/loadBalancingInterval-1);
+            profiler.time(ProfilerIds::timeLb);
             tree->newLoadDistribution();
+            profiler.time2file(ProfilerIds::timeLb);
+            profiler.setStep(step-1);
         }
 
         profiler.time(ProfilerIds::timePseudo);

@@ -9,10 +9,8 @@ SubDomainTree::SubDomainTree(double domainSize, double theta, double softening, 
     numProcs = comm.size();
     myRank = comm.rank();
     range = new keytype[numProcs+1];
-    if (hilbert){
-        hilbertFlag = true;
-        getKey = &Lebesgue2Hilbert;
-    }
+    hilbertFlag = hilbert;
+    if (hilbertFlag) getKey = &Lebesgue2Hilbert;
 }
 
 SubDomainTree::~SubDomainTree(){
@@ -61,7 +59,7 @@ void SubDomainTree::insertSubTree(Particle &p, TreeNode &t) {
 }
 
 void SubDomainTree::compPseudoParticles(){
-    compPseudoParticles(root);
+    Tree::compPseudoParticles(root);
 
     std::vector<Particle> ccLeaves2send {};
     std::vector<Particle> ccLeaves2receive {};
@@ -99,33 +97,6 @@ void SubDomainTree::compPseudoParticles(){
     Logger(DEBUG) << "\t... done.";
 
 
-}
-
-void SubDomainTree::compPseudoParticles(TreeNode &t){
-    for (int i=0; i<global::powdim; ++i) {
-        if (t.son[i] != nullptr){
-            compPseudoParticles(*t.son[i]);
-        }
-    }
-    if (t.type == NodeType::pseudoParticle || t.isCommonCoarseLeaf()){
-        t.p.m = 0.;
-        for (int d=0; d<global::dim; ++d){
-            t.p.x[d] = 0.;
-        }
-        if (!t.isLeaf()){ // skip calculations for empty common coarse leaf nodes
-            for (int i=0; i<global::powdim; ++i){
-                if (t.son[i] != nullptr){
-                    t.p.m += t.son[i]->p.m;
-                    for (int d=0; d<global::dim; ++d){
-                        t.p.x[d] += t.son[i]->p.m * t.son[i]->p.x[d];
-                    }
-                }
-            }
-            for (int d=0; d<global::dim; ++d){
-                t.p.x[d] = t.p.x[d] / t.p.m;
-            }
-        }
-    }
 }
 
 void SubDomainTree::fillCommonCoarseLeavesVector(std::vector<Particle> &ccLeaves2send, TreeNode &t){
@@ -190,6 +161,7 @@ void SubDomainTree::compForce(){
 
     Particle *particles2receive;
     int totalReceiveLength = particleExchange(particles4procs, particles2receive);
+    profiler.value2file<int>(ProfilerIds::forceRcv, totalReceiveLength);
 
     delete [] particles4procs;
 
@@ -250,86 +222,11 @@ void SubDomainTree::particles2sendByTheta(TreeNode &cc, std::map<keytype, Partic
     }
 }
 
-
-void SubDomainTree::compPosition(TreeNode &t){
-    for (int i=0; i<global::powdim; ++i){
-        if (t.son[i] != nullptr){
-            compPosition(*t.son[i]);
-        }
-    }
-    if (t.type == NodeType::particle && t.isLeaf()){
-        t.p.updateX(timeStep);
-    }
-}
-
-void SubDomainTree::compVelocity(TreeNode &t){
-    for (int i=0; i<global::powdim; ++i){
-        if (t.son[i] != nullptr){
-            compVelocity(*t.son[i]);
-        }
-    }
-    if (t.type == NodeType::particle && t.isLeaf()){
-        t.p.updateV(timeStep);
-    }
-}
-
 void SubDomainTree::moveParticles(){
     Tree::moveParticles();
+    profiler.disableWrite();
     sendParticles();
-}
-
-void SubDomainTree::moveParticles(TreeNode &t){
-    for (int i=0; i<global::powdim; ++i){
-        if (t.son[i] != nullptr){
-            moveParticles(*t.son[i]);
-        }
-    }
-    if (t.type == NodeType::particle && t.isLeaf() && !t.p.moved){
-        t.p.moved = true;
-        if (!t.box.particleWithin(t.p)){
-            if (root.box.particleWithin(t.p)){
-                insertParticle(t.p, root);
-                t.p.toDelete = true;
-            } else {
-                Logger(WARN) << "\t\tmoveParticles(): Particle left system. x = ("
-                              << t.p.x[0] << ", " << t.p.x[1] << ", " << t.p.x[2] << ")";
-                t.p.toDelete = true;
-            }
-        }
-    }
-}
-
-void SubDomainTree::repair(TreeNode &t){
-    for (int i=0; i<global::powdim; ++i){
-        if (t.son[i] != nullptr){
-            repair(*t.son[i]);
-        }
-    }
-    if (!t.isLeaf()){
-        int numberOfSons = 0;
-        int sonIndex;
-        for (int i=0; i<global::powdim; ++i){
-            if (t.son[i] != nullptr){
-                if (t.son[i]->p.toDelete){
-                    delete t.son[i];
-                    t.son[i] = nullptr;
-                } else {
-                    ++numberOfSons;
-                    sonIndex = i;
-                }
-            }
-        }
-        if (t.type != NodeType::commonCoarse){
-            if (numberOfSons == 0){ // && t.type != NodeType::particle){ // can't be particle because it's a leaf FUCK
-                t.p.toDelete = true;
-            } else if (numberOfSons == 1 && t.son[sonIndex]->isLeaf()){
-                t.p = t.son[sonIndex]->p;
-                t.type = t.son[sonIndex]->type;
-                delete t.son[sonIndex];
-                t.son[sonIndex] = nullptr;
-            }
-        }
-    }
+    profiler.enableWrite();
 }
 
 void SubDomainTree::sendParticles(){
@@ -345,6 +242,7 @@ void SubDomainTree::sendParticles(){
 
     Particle *particles2receive;
     int totalReceiveLength = particleExchange(particles2send, particles2receive);
+    profiler.value2file<int>(ProfilerIds::lbRcv, totalReceiveLength);
 
     delete [] particles2send;
 

@@ -23,6 +23,11 @@ namespace ProfilerIds {
     const char* const timePseudo { "/time/compPseudoParticles" };
     const char* const timeForce { "/time/compForce" };
     const char* const timeVel { "/time/compVelocity" };
+    // only for parallel mode
+    const char* const timeLb { "/time/loadBalancing" };
+    const char* const forceRcv { "/force/receiveLength" };
+    const char* const lbRcv { "/loadBalancing/receiveLength" };
+
 }
 
 // Singleton

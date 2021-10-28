@@ -51,16 +51,17 @@ protected:
     int numParticles;
 
     void insertParticle(Particle &p, TreeNode &t);
+    void compPseudoParticles(TreeNode &t);
+    void repair(TreeNode &t);
     void forceBH(TreeNode &leaf, TreeNode &t, double l);
 
 
 private:
     double softening;
 
-    virtual void compPosition(TreeNode &t) = 0;
-    virtual void compVelocity(TreeNode &t) = 0;
-    virtual void moveParticles(TreeNode &t) = 0;
-    virtual void repair(TreeNode &t) = 0;
+    void compPosition(TreeNode &t);
+    void compVelocity(TreeNode &t);
+    void moveParticles(TreeNode &t);
 
     void compEnergy(double &E, TreeNode &t);
     void compAngularMomentum(std::vector<double> &L, TreeNode &t);
