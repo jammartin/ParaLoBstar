@@ -61,6 +61,7 @@ void SubDomainTree::insertSubTree(Particle &p, TreeNode &t) {
 void SubDomainTree::compPseudoParticles(){
     Tree::compPseudoParticles(root);
 
+    profiler.time(ProfilerIds::timeCommonCoarse);
     std::vector<Particle> ccLeaves2send {};
     std::vector<Particle> ccLeaves2receive {};
 
@@ -94,9 +95,8 @@ void SubDomainTree::compPseudoParticles(){
     std::vector<Particle>::iterator ccLeavesIt = ccLeaves2insert.begin();
     compCommonCoarseNodes(ccLeavesIt, root);
 
+    profiler.time2file(ProfilerIds::timeCommonCoarse);
     Logger(DEBUG) << "\t... done.";
-
-
 }
 
 void SubDomainTree::fillCommonCoarseLeavesVector(std::vector<Particle> &ccLeaves2send, TreeNode &t){
@@ -141,6 +141,8 @@ void SubDomainTree::compCommonCoarseNodes(std::vector<Particle>::iterator &ccLea
 }
 
 void SubDomainTree::compForce(){
+
+    profiler.time(ProfilerIds::timeForceExchange);
     auto particles2send = new std::map<keytype, Particle>[numProcs];
 
     Logger(DEBUG) << "\tCollecting particles to send to processes ...";
@@ -170,6 +172,7 @@ void SubDomainTree::compForce(){
     }
 
     delete[] particles2receive;
+    profiler.time2file(ProfilerIds::timeForceExchange);
 
     compForce(root, 0UL, 0);
     repair(root);
@@ -186,7 +189,7 @@ void SubDomainTree::compForce(TreeNode &t, keytype k, int lvl){
         for (int d=0; d<global::dim; ++d){
             t.p.F[d] = 0.;
         }
-        t.p.U = 0.; // reset particle's energy
+        t.p.U = 0.; // reset particle's potential energy
         forceBH(t, root, root.box.getLength());
     }
 }

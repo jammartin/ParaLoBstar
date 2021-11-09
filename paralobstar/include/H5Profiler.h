@@ -24,8 +24,10 @@ namespace ProfilerIds {
     const char* const timeForce { "/time/compForce" };
     const char* const timeVel { "/time/compVelocity" };
     // only for parallel mode
-    const char* const timeLb { "/time/loadBalancing" };
+    const char* const timeCommonCoarse { "/time/commonCoarsePseudoParticles" };
+    const char* const timeForceExchange { "/time/forceParticleExchange" };
     const char* const forceRcv { "/force/receiveLength" };
+    const char* const timeLb { "/time/loadBalancing" };
     const char* const lbRcv { "/loadBalancing/receiveLength" };
 
 }

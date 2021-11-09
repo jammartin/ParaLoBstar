@@ -28,7 +28,6 @@ if __name__ == "__main__":
         print("Processing ", h5file, " ...")
         data = h5py.File(h5file, 'r')
         time.append(data["t"][()])
-        energy.append(data["E_tot"][()])
 
         if args.angular_momentum:
             print("... reading angular momentum ...")
@@ -47,8 +46,8 @@ if __name__ == "__main__":
                 radii[int(np.ceil(.9 * numParticles))]]))
         else:
             print("... computing mass and reading energy ...")
-            mass.append(np.sum(data["m"][:]))
             energy.append(data["E_tot"][()])
+            mass.append(np.sum(data["m"][:]))
         
         print("... done.")
                     

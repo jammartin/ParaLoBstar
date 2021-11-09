@@ -39,9 +39,13 @@ BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("do
     profiler.createTimeDataSet(ProfilerIds::timeForce, steps);
     profiler.createTimeDataSet(ProfilerIds::timeVel, steps);
     // Initialize only parallel mode data sets
-    profiler.createValueDataSet<int>(ProfilerIds::forceRcv, steps);
-    profiler.createTimeDataSet(ProfilerIds::timeLb, steps/loadBalancingInterval);
-    profiler.createValueDataSet<int>(ProfilerIds::lbRcv, steps/loadBalancingInterval);
+    if (parallel){
+        profiler.createTimeDataSet(ProfilerIds::timeCommonCoarse, steps);
+        profiler.createTimeDataSet(ProfilerIds::timeForceExchange, steps);
+        profiler.createValueDataSet<int>(ProfilerIds::forceRcv, steps);
+        profiler.createTimeDataSet(ProfilerIds::timeLb, steps/loadBalancingInterval);
+        profiler.createValueDataSet<int>(ProfilerIds::lbRcv, steps/loadBalancingInterval);
+    }
 
     int particlesPerProc = N/numProcs;
 
