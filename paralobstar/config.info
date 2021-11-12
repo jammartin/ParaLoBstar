@@ -1,11 +1,12 @@
-domainSize 50.
-initFile plummerN10000seed3777336863.h5
-outDir output
-parallel true
-timeStep .001
-timeEnd 40.
-theta .6
-hilbert true
-h5DumpInterval 50
-loadBalancingInterval 25
-outputRank 27
+domainSize 10.          // box side length of the simulation domain
+initFile plN4096.h5     // h5 file containing the initial particle distribution
+outDir output           // output directory for particle distribution h5 files
+parallel true           // switch for serial or parallel mode
+timeStep .025           // fixed time step
+timeEnd 25.             // end of the simulation
+theta 1.                // clumping parameter
+softening 0.032         // softening parameter
+hilbert true            // switch for Lebesgue or Hilbert curves used for domain decomposition
+h5DumpInterval 1        // output particle distribution each h5DumpInterval steps
+loadBalancingInterval 5 // obtain a new load distribution each loadBalancingInterval steps
+outputRank -1           // standard output only by process with rank outputRank (-1: all ranks)
