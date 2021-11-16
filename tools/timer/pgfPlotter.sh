@@ -1,7 +1,8 @@
 #!/bin/bash
 
+THETA_LBL="th0_5"
 lbIntervals=("1" "5" "10" "25" "50")
-numProcs=("2" "4" "8" "12" "16" "20" "28")
+numProcs=("2" "4" "8" "12" "16" "20" "28" "36")
 
 if [ -z "$1" ]
 then
@@ -14,7 +15,7 @@ JOB_BASE_PATH=$1
 for lbInterval in "${lbIntervals[@]}"
 do
     
-outFile="pgf/$(basename ${JOB_BASE_PATH})lb${lbInterval}.tex"
+outFile="pgf/$(basename ${JOB_BASE_PATH})lb${lbInterval}${THETA_LBL}.tex"
 
 echo "Creating $outFile ..."
 

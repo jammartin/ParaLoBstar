@@ -80,6 +80,7 @@ if __name__ == "__main__":
         ax1.plot(time, quantiles[:, 2], label="90%")
 
         plt.legend(loc="best")
+        plt.grid()
 
         fig.tight_layout()
         plt.savefig("output/mass_quantiles.png")

@@ -81,11 +81,17 @@ void SubDomainTree::compPseudoParticles(){
         }
     }
     // concatenating common coarse leaves from all processes
-    for (int proc=0; proc<numProcs; ++proc){
-        for (int ccIndex=0; ccIndex<ccLeaves2insert.size(); ++ccIndex){
+    for (int ccIndex=0; ccIndex<ccLeaves2insert.size(); ++ccIndex){
+        for (int proc=0; proc<numProcs; ++proc){
             ccLeaves2insert[ccIndex].m += ccLeaves2receive[ccIndex+proc*ccLeavesLength].m;
             for (int d=0; d<global::dim; ++d){
-                ccLeaves2insert[ccIndex].x[d] += ccLeaves2receive[ccIndex+proc*ccLeavesLength].x[d];
+                ccLeaves2insert[ccIndex].x[d] += ccLeaves2receive[ccIndex+proc*ccLeavesLength].m
+                        * ccLeaves2receive[ccIndex+proc*ccLeavesLength].x[d];
+            }
+        }
+        for (int d=0; d<global::dim; ++d){
+            if (ccLeaves2insert[ccIndex].m > 0.){
+                ccLeaves2insert[ccIndex].x[d] = ccLeaves2insert[ccIndex].x[d] / ccLeaves2insert[ccIndex].m;
             }
         }
     }
@@ -101,7 +107,7 @@ void SubDomainTree::compPseudoParticles(){
 
 void SubDomainTree::fillCommonCoarseLeavesVector(std::vector<Particle> &ccLeaves2send, TreeNode &t){
     for (int i=0; i<global::powdim; ++i){
-        if (t.son[i] != nullptr){
+        if (t.son[i] != nullptr && t.son[i]->type == NodeType::commonCoarse){
             fillCommonCoarseLeavesVector(ccLeaves2send, *t.son[i]);
         }
     }
