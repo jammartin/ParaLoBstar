@@ -82,16 +82,13 @@ void SubDomainTree::compPseudoParticles(){
     }
     // concatenating common coarse leaves from all processes
     for (int ccIndex=0; ccIndex<ccLeaves2insert.size(); ++ccIndex){
+        // each common coarse leave can only have children on one process
         for (int proc=0; proc<numProcs; ++proc){
-            ccLeaves2insert[ccIndex].m += ccLeaves2receive[ccIndex+proc*ccLeavesLength].m;
-            for (int d=0; d<global::dim; ++d){
-                ccLeaves2insert[ccIndex].x[d] += ccLeaves2receive[ccIndex+proc*ccLeavesLength].m
-                        * ccLeaves2receive[ccIndex+proc*ccLeavesLength].x[d];
-            }
-        }
-        for (int d=0; d<global::dim; ++d){
-            if (ccLeaves2insert[ccIndex].m > 0.){
-                ccLeaves2insert[ccIndex].x[d] = ccLeaves2insert[ccIndex].x[d] / ccLeaves2insert[ccIndex].m;
+            if (ccLeaves2receive[ccIndex+proc*ccLeavesLength].m > 0.){
+                ccLeaves2insert[ccIndex].m = ccLeaves2receive[ccIndex+proc*ccLeavesLength].m;
+                for (int d=0; d<global::dim; ++d){
+                    ccLeaves2insert[ccIndex].x[d] = ccLeaves2receive[ccIndex+proc*ccLeavesLength].x[d];
+                }
             }
         }
     }

@@ -14,6 +14,7 @@ if __name__ == "__main__":
                         nargs="?", default="../../paralobstar/output")
     parser.add_argument("--angular_momentum", "-L", action="store_true", help="plot angular momentum (defaul: energy and mass)")
     parser.add_argument("--mass_quantiles", "-Q", action="store_true", help="plot 10, 50 and 90 percent mass quantiles (default: energy and mass)")
+    parser.add_argument("--light_theme", "-l", action="store_true", help="use a light theme for the generated plots")
 
     args = parser.parse_args()
 
@@ -50,11 +51,14 @@ if __name__ == "__main__":
             mass.append(np.sum(data["m"][:]))
         
         print("... done.")
-                    
-    plt.style.use("dark_background")
-    fig, ax1 = plt.subplots(figsize=(12, 9), dpi=200)
-    fig.patch.set_facecolor("black")
-    ax1.set_xlabel("Time")
+
+        
+    plt.rc('text', usetex=True)
+    plt.rc('text.latex', preamble=r'\usepackage{siunitx}')
+    if not args.light_theme: plt.style.use("dark_background")
+    fig, ax1 = plt.subplots(figsize=(8, 6), dpi=200)
+    if not args.light_theme: fig.patch.set_facecolor("black")
+    ax1.set_xlabel("Time $t$")
     
     if args.angular_momentum:
         ax1.set_title("Angular momentum")
@@ -75,13 +79,16 @@ if __name__ == "__main__":
 
         quantiles = np.array(mass_quantiles)
 
-        ax1.plot(time, quantiles[:, 0], label="10%")
-        ax1.plot(time, quantiles[:, 1], label="50%")
-        ax1.plot(time, quantiles[:, 2], label="90%")
-
+        ax1.plot(time, quantiles[:, 0], 'b', label="\SI{10}{\percent} mass quantile")
+        ax1.plot(time, quantiles[:, 1], 'r', label="\SI{50}{\percent} mass quantile")
+        if args.light_theme:
+            ax1.plot(time, quantiles[:, 2], 'k', label="\SI{90}{\percent} mass quantile")
+        else:
+            ax1.plot(time, quantiles[:, 2], 'y', label="\SI{90}{\percent} mass quantile")
+        
+        ax1.set_ylabel("Radius $r$ containing a quantile of the total mass $M$")
         plt.legend(loc="best")
         plt.grid()
-
         fig.tight_layout()
         plt.savefig("output/mass_quantiles.png")
 
