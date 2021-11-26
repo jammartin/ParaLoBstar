@@ -1,3 +1,6 @@
+# Set shell
+SHELL := /bin/bash
+
 # Set compiler
 CXX := g++
 
@@ -27,7 +30,7 @@ OBJECTS := $(SOURCES:$(SRCDIR)/%.$(SRCEXT)=$(OBJDIR)/%.$(OBJEXT))
 MAIN := main
 
 # setting general flags
-CXXFLAGS := -std=c++11 -I$(INCLDIR) -I$(HOLIB) -I/usr/include/hdf5/serial -Xpreprocessor -fopenmp
+CXXFLAGS := -std=c++11 -O3 -I$(INCLDIR) -I$(HOLIB) -I/usr/include/hdf5/serial -Xpreprocessor -fopenmp
 # setting linker flags
 LDFLAGS := -std=c++11 -L/usr/lib/x86_64-linux-gnu/hdf5/serial/ -lhdf5 -lboost_system -lboost_filesystem
 
@@ -94,7 +97,16 @@ install: prepare-run | $(HOLIB)
 	@cp -r tmp/HighFive-master/include/highfive $(HOLIB)/.
 	@echo "... done. Deleting tmp/ ..."
 	@ rm -rf tmp
-	@echo "... done. Ready to build via 'make all|debug'."
+	@echo "... done. Ready to build via 'make all|debug|binac'."
+
+binac-load-modules:
+	@echo "Loading modules ..."
+	source binacLoadModules.sh
+	@echo "... done."
+
+binac: CXXFLAGS += -I/opt/bwhpc/common/lib/boost/1.76.0/include -I/opt/bwhpc/common/lib/hdf5/1.10.7-gnu-9.2/include
+binac: LDFLAGS := -std=c++11 -L/opt/bwhpc/common/lib/boost/1.76.0/lib -L/opt/bwhpc/common/lib/hdf5/1.10.7-gnu-9.2/lib -lhdf5 -lboost_filesystem -lhdf5 -fopenmp
+binac: binac-load-modules all
 
 # build main target
 # check if target directory 'bin' already exist via prerequisite

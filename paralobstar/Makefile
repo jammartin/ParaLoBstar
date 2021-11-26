@@ -30,7 +30,7 @@ OBJECTS := $(SOURCES:$(SRCDIR)/%.$(SRCEXT)=$(OBJDIR)/%.$(OBJEXT))
 MAIN := main
 
 # setting general flags
-CXXFLAGS := -std=c++11 -I$(INCLDIR) -I$(HOLIB) -I/usr/include/hdf5/openmpi
+CXXFLAGS := -std=c++11 -O3 -I$(INCLDIR) -I$(HOLIB) -I/usr/include/hdf5/openmpi
 # setting linker flags
 LDFLAGS := -std=c++11 -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -lhdf5 -lboost_filesystem -lboost_mpi -lboost_serialization
 

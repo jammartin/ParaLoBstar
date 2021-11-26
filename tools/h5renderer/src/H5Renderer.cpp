@@ -38,30 +38,40 @@ void H5Renderer::createImages(std::string outDir){
     #pragma omp parallel for
     for (std::vector<fs::path>::const_iterator h5PathIt = h5files.begin(); h5PathIt < h5files.end(); h5PathIt++) {
 
+        // initialize data structures
+        std::vector<unsigned long> ranges;      
+        std::vector<unsigned long> k;
+        std::vector<std::vector<double>> x; // container for particle positions
+
         Logger(INFO) << "Reading " << h5PathIt->filename() << " ...";
 
         Logger(DEBUG) << "    Opening '" << h5PathIt->string() << "' ...";
         // opening file
-        HighFive::File file(h5PathIt->string(), HighFive::File::ReadOnly);
-        Logger(DEBUG) << "    file opened.";
+        
+	#pragma omp critical
+	{
+	HighFive::File file(h5PathIt->string(), HighFive::File::ReadOnly);
+	Logger(DEBUG) << "    file opened.";
+	
 
         // reading process ranges
         HighFive::DataSet rng = file.getDataSet("/ranges");
-        std::vector<unsigned long> ranges;
-        rng.read(ranges);
+
+	rng.read(ranges);
 
         // reading particle keys
         HighFive::DataSet key = file.getDataSet("/key");
-        std::vector<unsigned long> k;
+
         key.read(k);
 
         // reading particle positions
         HighFive::DataSet pos = file.getDataSet("/x");
-        std::vector<std::vector<double>> x; // container for particle positions
+
         pos.read(x);
+	}
 
         Logger(DEBUG) << "    Storing read data to vector<Particle> container ...";
-        std::vector<Particle> particles{std::vector<Particle>()};
+        std::vector<Particle> particles {};
 
         for (int i = 0; i < x.size(); ++i) {
             particles.push_back(Particle(x[i][0], x[i][1], x[i][2], k[i]));
@@ -101,6 +111,7 @@ void H5Renderer::createImages(std::string outDir){
         pixelSpace2File(outFile, pixelSpace);
 
         Logger(DEBUG) << "  Deleting pixel space.";
+	delete[] pixelSpace;
 
         Logger(INFO) << "... done. Results written to '" << outFile << "'.";
     }
