@@ -2,9 +2,9 @@
 
 # BEGIN CONFIGURATION
 SIM_DIR="../../simulations"
-modes=("Se" "Le" "Hi")
-lbIntervals=("1" "5" "10" "25" "50")
-numProcs=("2" "4" "8" "12" "16" "20" "28" "36")
+modes=("Le" "Hi")
+lbIntervals=("1" "10" "50")
+numProcs=("76" "94")
 thetas=("0.5" "0.8")
 # END CONFIGURATION
 
@@ -107,6 +107,10 @@ do
 			if [ "$nodesRemainder" -gt "0" ]; then
 			    let nodes=nodes+1
 			    let coresPerNode=numProc/nodes
+			fi
+			let missingNodes=numProc-nodes*coresPerNode
+			if [ "$missingNodes" -gt "0" ]; then
+			    coresPerNode+="+1:ppn=$missingNodes"
 			fi
 		    fi
 		    
