@@ -61,14 +61,15 @@ if __name__ == "__main__":
     ax1.set_xlabel("Time $t$")
     
     if args.angular_momentum:
-        ax1.set_title("Angular momentum")
+        ax1.set_title("Angular momentum along the three coordinate axes")
 
         angMom = np.array(angular_momentum)
         
-        ax1.plot(time, angMom[:, 0], label="L_x")
-        ax1.plot(time, angMom[:, 1], label="L_y")
-        ax1.plot(time, angMom[:, 2], label="L_z")
-
+        ax1.plot(time, angMom[:, 0], label="$L_x$")
+        ax1.plot(time, angMom[:, 1], label="$L_y$")
+        ax1.plot(time, angMom[:, 2], label="$L_z$")
+        ax1.set_ylabel("Total angular momentum $L_c$ along axis $c$")
+        
         plt.legend(loc="best")
         
         fig.tight_layout()
@@ -95,13 +96,13 @@ if __name__ == "__main__":
 
     else:
         ax1.set_title("Total energy and mass")
-        ax1.set_ylabel("Energy")
+        ax1.set_ylabel("Total energy r$E_\text{tot}$")
     
-        ax1.plot(time, energy, "r-", label="E_tot")
+        ax1.plot(time, energy, "r-", label=r"$E_\text{tot}$")
 
         ax2 = ax1.twinx()
-        ax2.plot(time, mass, "b-", label="M")
-        ax2.set_ylabel("Mass")
+        ax2.plot(time, mass, "b-", label="$M$")
+        ax2.set_ylabel("Total mass $M$")
 
         fig.tight_layout()
         fig.legend()

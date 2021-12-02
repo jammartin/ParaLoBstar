@@ -187,7 +187,7 @@ void SubDomainTree::compForce(TreeNode &t, keytype k, int lvl){
             compForce(*t.son[i], k | ((keytype)i << (global::dim*(global::maxTreeLvl-lvl-1))), lvl+1);
         }
     }
-    if (key2proc(getKey(k, lvl)) == myRank && t.type == NodeType::particle && t.isLeaf()){
+    if (key2proc(getKey(k, lvl)) == myRank && t.type == NodeType::particle){
         // actual force calculation
         for (int d=0; d<global::dim; ++d){
             t.p.F[d] = 0.;
@@ -266,7 +266,7 @@ void SubDomainTree::fillSendVectors(std::vector<Particle> *&particles2send, Tree
         }
     }
     int particleProc;
-    if (t.type == NodeType::particle && t.isLeaf() && (particleProc = key2proc(getKey(k, lvl))) != myRank){
+    if (t.type == NodeType::particle && (particleProc = key2proc(getKey(k, lvl))) != myRank){
         particles2send[particleProc].push_back(t.p);
         t.p.toDelete = true;
     }

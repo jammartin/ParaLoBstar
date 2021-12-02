@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 RUN_PATH="../../validation/plN4096th1_0"
-RUNS="plN4096Se plN4096lb5np8Le plN4096lb5np8Hi"
+RUNS="plN4096Se plN4096lb1np8Le plN4096lb1np8Hi"
 
 for run in $RUNS; do
     ./main.py -d "$RUN_PATH/$run" # mass and energy
