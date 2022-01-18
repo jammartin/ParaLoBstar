@@ -21,6 +21,7 @@ int main(int argc, char *argv[]) {
             ("v,verbose", "More printouts for debugging")
             ("o,output", "Write result files to given path", cxxopts::value<std::string>()->default_value("./output"))
             ("z,zoom", "Zoom in factor to show more details", cxxopts::value<double>()->default_value("1"))
+            ("x,crosses", "Draw crosses instead of pixels")
             ("h,help", "Show this help");
 
     // read and store options provided
@@ -36,6 +37,11 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
+    bool crosses = false;
+    if (opts.count("crosses")) {
+        crosses = true;
+    }
+
     /** Parse config file **/
     ConfigParser confP{ ConfigParser(opts["config"].as<std::string>()) };
 
@@ -43,7 +49,7 @@ int main(int argc, char *argv[]) {
     H5Renderer renderer { confP.getVal<std::string>("h5folder"),
                         confP.getVal<double>("domainSize"),
                         confP.getVal<int>("imgHeight"),
-                            opts["zoom"].as<double>() };
+                            opts["zoom"].as<double>(), crosses };
 
     /** create the images from data in h5 files **/
     renderer.createImages(opts["output"].as<std::string>());

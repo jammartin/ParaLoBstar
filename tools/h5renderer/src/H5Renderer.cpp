@@ -1,7 +1,8 @@
 #include "../include/H5Renderer.h"
 
-H5Renderer::H5Renderer(std::string _h5folder, double _domainSize, int _imgHeight, double _zoom, bool _processColoring) :
-h5folder { _h5folder }, domainSize { _domainSize }, imgHeight { _imgHeight }, zoom { _zoom },
+H5Renderer::H5Renderer(std::string _h5folder, double _domainSize, int _imgHeight, double _zoom, bool _crosses,
+                       bool _processColoring) :
+h5folder { _h5folder }, domainSize { _domainSize }, imgHeight { _imgHeight }, zoom { _zoom }, crosses { _crosses },
 h5files { std::vector<fs::path>() }
 {
     // gather files found at h5folder
@@ -91,7 +92,14 @@ void H5Renderer::createImages(std::string outDir){
         // looping through particles in decreasing z-order
         for (int i = 0; i < particles.size(); ++i) {
             ColorRGB color = procColor(particles[i].key, ranges);
-            particle2PixelXY(particles[i].x, particles[i].y, color, pixelSpace);
+            if (crosses){
+                for (int ii=-10; ii<10; ii++) {
+                    particle2PixelXY(particles[i].x + ii*0.01, particles[i].y, color, pixelSpace);
+                    particle2PixelXY(particles[i].x, particles[i].y + ii*0.01, color, pixelSpace);
+                }
+            } else {
+                particle2PixelXY(particles[i].x, particles[i].y, color, pixelSpace);
+            }
         }
         Logger(DEBUG) << "    ... done.";
 
@@ -101,7 +109,14 @@ void H5Renderer::createImages(std::string outDir){
         // looping through particles in increasing y-order
         for (int i = 0; i < particles.size(); ++i) {
             ColorRGB color = procColor(particles[i].key, ranges);
-            particle2PixelXZ(particles[i].x, particles[i].z, color, pixelSpace);
+            if (crosses){
+                for (int ii=-10; ii<10; ii++) {
+                    particle2PixelXZ(particles[i].x + ii*0.01, particles[i].z, color, pixelSpace);
+                    particle2PixelXZ(particles[i].x, particles[i].z + ii*0.01, color, pixelSpace);
+                }
+            } else {
+                particle2PixelXZ(particles[i].x, particles[i].z, color, pixelSpace);
+            }
         }
         Logger(DEBUG) << "    ... done.";
 

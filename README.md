@@ -126,9 +126,14 @@ Finally run `./createJobs.sh [INIT_FILE_STEM]` and a directory structure is crea
 The algorithm is a C++ implementation of the approach described in 
 > M. Griebel, S. Knapek, and G. Zumbusch. **Numerical Simulation in Molecular Dynamics**. pp 313–370. Springer 2007. ISBN: 9783540680949.
 
-
-
 ## Acknowledgements
+
+The authors acknowledge support by the High Performance and Cloud Computing Group at the Zentrum für Datenverarbeitung of the University of Tübingen, the state of Baden-Württemberg through bwHPC
+and the German Research Foundation (DFG) through grant no INST 37/935-1 FUGG.
+
+The code has been developed for and tested on the bwForCluster BinAC.
+
+## Miscellaneous
 - Utitlities used for logging and configuration taken from [CppUtils](https://github.com/MichaelSt98/CppUtils)
 - Pre-developement on Branch [MolecularDynamics in NNS](https://github.com/MichaelSt98/NNS/tree/MolecularDynamics)
 - ParaLoBstar's icon has been created from free content [lobster image](https://pixabay.com/images/id-2027717/) and [star eyes image](https://pixabay.com/images/id-303363/)

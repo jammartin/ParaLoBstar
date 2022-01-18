@@ -346,7 +346,7 @@ void SubDomainTree::buildCommonCoarseTree(TreeNode &t, keytype k, int lvl) {
             if (t.son[i] == nullptr){
                 t.son[i] = new TreeNode();
                 t.box.sonBoxByIndex(t.son[i]->box, i);
-            } else if (t.son[i]->type == NodeType::particle && t.son[i]->isLeaf()){
+            } else if (t.son[i]->type == NodeType::particle){
                 t.son[i]->type = NodeType::commonCoarse; // has to be set before calling insertParticle
                 insertParticle(t.son[i]->p, *t.son[i]); // move particle one level deeper
                 t.son[i]->p = Particle(); // reset common coarse node's particle to default

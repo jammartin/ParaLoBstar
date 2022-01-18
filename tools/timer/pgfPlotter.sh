@@ -2,7 +2,7 @@
 
 # BEGIN CONFIGURATION 
 lbIntervals=("1" "10" "50")
-numProcs=("2" "4" "8" "16" "28" "40" "56" "76" "94" "112" "140")
+numProcs=("2" "4" "8" "16" "28" "40" "56" "76" "94" "112" "140") # "152" "188" "224")
 # END CONFIGURATION
 
 if [ -z "$1" ]
@@ -21,7 +21,7 @@ then
 
 theta=${THETA_LBL/_/.}
 
-echo "Inferred from given job base path: N = $NUM_PARTICLES, theta=$theta"
+echo "Inferred from given job base path: N=$NUM_PARTICLES, theta=$theta"
 
 for lbInterval in "${lbIntervals[@]}"
 do
@@ -30,19 +30,26 @@ do
 
     echo "Creating $outFile ..."
 
-    #serial
     cat <<EOF > $outFile
 \begin{tikzpicture}
   \begin{semilogyaxis}[height=8cm, width=10cm, legend pos=north east, title={\$N=\num{${NUM_PARTICLES}} \text{, } \theta=\num{${theta}}$},
                grid=major, xlabel=Number of cores, ylabel=Execution time per step in $\si{\milli\second}$]
+EOF
+    # serial
+    if [ -f "${JOB_BASE_PATH}Se.h5" ]; then
+	cat <<EOF >> $outFile
     \addplot[only marks, mark=o] coordinates {
       (1,$(./main.py -s -f ${JOB_BASE_PATH}Se.h5 -o))
     };
     \addlegendentry{serial}
-    \addplot[only marks, mark=triangle] coordinates {
+    
 EOF
+    fi
 
     # Lebesgue
+    cat <<EOF >> $outFile
+    \addplot[only marks, mark=triangle] coordinates {
+EOF
     for numProc in "${numProcs[@]}"
     do
 	echo "      ($numProc, $(./main.py -l $lbInterval -f ${JOB_BASE_PATH}lb${lbInterval}np${numProc}Le.h5 -o))" >> $outFile

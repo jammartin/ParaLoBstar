@@ -49,6 +49,7 @@ private:
     const double domainSize;
     const int imgHeight;
     const double zoom;
+    const bool crosses;
 
     // constants
     static constexpr double SCALE2FIT { .95 };
@@ -66,7 +67,8 @@ private:
     void pixelSpace2File(const std::string &outFile, ColorRGB *pixelSpace);
 
 public:
-    H5Renderer(std::string _h5folder, double _domainSize, int _imgHeight, double _zoom, bool _processColoring=true);
+    H5Renderer(std::string _h5folder, double _domainSize, int _imgHeight, double _zoom, bool _crosses,
+               bool _processColoring=true);
 
     void createImages(std::string outDir);
 };
