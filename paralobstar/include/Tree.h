@@ -25,7 +25,7 @@ public:
     virtual void compPseudoParticles() = 0;
     virtual void compForce() = 0;
     virtual void dump2file(HighFive::DataSet &mDataSet, HighFive::DataSet &xDataSet, HighFive::DataSet &vDataSet,
-                           HighFive::DataSet &kDataSet) = 0;
+                           HighFive::DataSet &kDataSet, HighFive::DataSet &matDataSet, int traceMaterial) = 0;
 
     void insertParticle(Particle &p);
     void compPosition();

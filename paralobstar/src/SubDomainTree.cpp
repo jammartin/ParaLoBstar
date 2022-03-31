@@ -539,14 +539,16 @@ void SubDomainTree::angularMomentum(std::vector<double> &L_tot){
 }
 
 void SubDomainTree::dump2file(HighFive::DataSet &mDataSet, HighFive::DataSet &xDataSet,
-                              HighFive::DataSet &vDataSet, HighFive::DataSet &kDataSet){
+                              HighFive::DataSet &vDataSet, HighFive::DataSet &kDataSet,
+                              HighFive::DataSet &matDataSet, int traceMaterial){
     // containers for particle data
     std::vector<double> m {};
     std::vector<std::vector<double>> x {};
     std::vector<std::vector<double>> v {};
     std::vector<keytype> k {};
+    std::vector<int> matIds {};
 
-    getParticleData(m, x, v, k, root, 0UL, 0);
+    getParticleData(m, x, v, k, matIds, root, 0UL, 0);
 
     std::vector<int> particlesOnProc {};
     mpi::all_gather(comm, numParticles, particlesOnProc);
@@ -564,15 +566,19 @@ void SubDomainTree::dump2file(HighFive::DataSet &mDataSet, HighFive::DataSet &xD
     vDataSet.select({offset , 0},
                     {std::size_t(numParticles), std::size_t(global::dim)}).write(v);
     kDataSet.select({offset}, {std::size_t(numParticles)}).write(k);
+    if (traceMaterial){
+        matDataSet.select({offset}, {std::size_t(numParticles)}).write(matIds);
+    }
 }
 
 void SubDomainTree::getParticleData(std::vector<double> &m,
                                     std::vector<std::vector<double>> &x,
                                     std::vector<std::vector<double>> &v,
-                                    std::vector<keytype> &keys, TreeNode &t, keytype k, int lvl){
+                                    std::vector<keytype> &keys,
+                                    std::vector<int> &matIds, TreeNode &t, keytype k, int lvl){
     for (int i=0; i<global::powdim; ++i){
         if (t.son[i] != nullptr){
-            getParticleData(m, x, v, keys,
+            getParticleData(m, x, v, keys, matIds,
                             *t.son[i], k | ((keytype)i << (global::dim*(global::maxTreeLvl-lvl-1))), lvl+1);
         }
     }
@@ -587,6 +593,7 @@ void SubDomainTree::getParticleData(std::vector<double> &m,
         x.push_back(xBuffer);
         v.push_back(vBuffer);
         keys.push_back(getKey(k, lvl));
+        matIds.push_back(t.p.materialId);
     }
 }
 

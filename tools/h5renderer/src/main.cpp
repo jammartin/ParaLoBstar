@@ -22,6 +22,7 @@ int main(int argc, char *argv[]) {
             ("o,output", "Write result files to given path", cxxopts::value<std::string>()->default_value("./output"))
             ("z,zoom", "Zoom in factor to show more details", cxxopts::value<double>()->default_value("1"))
             ("x,crosses", "Draw crosses instead of pixels")
+            ("i,ic-file", "Render initial conditions from file", cxxopts::value<std::string>()->implicit_value("ic.h5"))
             ("h,help", "Show this help");
 
     // read and store options provided
@@ -42,6 +43,11 @@ int main(int argc, char *argv[]) {
         crosses = true;
     }
 
+    std::string icFile {};
+    if (opts.count("ic-file")) {
+        icFile = opts["ic-file"].as<std::string>();
+    }
+
     /** Parse config file **/
     ConfigParser confP{ ConfigParser(opts["config"].as<std::string>()) };
 
@@ -49,7 +55,8 @@ int main(int argc, char *argv[]) {
     H5Renderer renderer { confP.getVal<std::string>("h5folder"),
                         confP.getVal<double>("domainSize"),
                         confP.getVal<int>("imgHeight"),
-                            opts["zoom"].as<double>(), crosses };
+                        opts["zoom"].as<double>(), crosses, icFile,
+                        confP.getVal<bool>("materialMode") };
 
     /** create the images from data in h5 files **/
     renderer.createImages(opts["output"].as<std::string>());

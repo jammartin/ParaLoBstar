@@ -11,7 +11,7 @@
 
 class InitialDistribution {
 public:
-    InitialDistribution(const std::string &file);
+    InitialDistribution(const std::string &file, bool _traceMaterial=false);
 
     int getNumberOfParticles() const { return numberOfParticles; };
     void getAllParticles(Particle *&particles);
@@ -21,7 +21,9 @@ private:
     // containers to be filled from hdf5 file
     std::vector<double> m {};
     std::vector<std::vector<double>> x {}, v {};
+    std::vector<int> materialId {};
     int numberOfParticles { 0 };
+    bool traceMaterial;
 };
 
 

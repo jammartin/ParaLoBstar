@@ -32,29 +32,35 @@ void DomainTree::compForce(TreeNode &t){
 }
 
 void DomainTree::dump2file(HighFive::DataSet &mDataSet, HighFive::DataSet &xDataSet,
-                           HighFive::DataSet &vDataSet, HighFive::DataSet &kDataSet) {
+                           HighFive::DataSet &vDataSet, HighFive::DataSet &kDataSet,
+                           HighFive::DataSet &matDataSet, int traceMaterial) {
     // containers for particle data
     std::vector<double> m {};
     std::vector<std::vector<double>> x {};
     std::vector<std::vector<double>> v {};
     std::vector<keytype> k {};
+    std::vector<int> matIds {};
 
-    getParticleData(m, x, v, k, root);
+    getParticleData(m, x, v, k, matIds, root);
 
     mDataSet.write(m);
     xDataSet.write(x);
     vDataSet.write(v);
     kDataSet.write(k);
+    if (traceMaterial){
+        matDataSet.write(matIds);
+    }
 
 }
 
 void DomainTree::getParticleData(std::vector<double> &m,
                                  std::vector<std::vector<double>> &x,
                                  std::vector<std::vector<double>> &v,
-                                 std::vector<keytype> &k, TreeNode &t){
+                                 std::vector<keytype> &k,
+                                 std::vector<int> &matIds, TreeNode &t){
     for (int i=0; i<global::powdim; ++i){
         if (t.son[i] != nullptr){
-            getParticleData(m, x, v, k, *t.son[i]);
+            getParticleData(m, x, v, k, matIds, *t.son[i]);
         }
     }
     if (t.isLeaf()){
@@ -68,5 +74,6 @@ void DomainTree::getParticleData(std::vector<double> &m,
         x.push_back(xBuffer);
         v.push_back(vBuffer);
         k.push_back(0UL); // dummy key
+        matIds.push_back(t.p.materialId);
     }
 }

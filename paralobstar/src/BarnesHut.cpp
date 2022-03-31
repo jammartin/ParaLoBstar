@@ -8,16 +8,18 @@ BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("do
                                            initFile { confP.getVal<std::string>("initFile") },
                                            outDir { confP.getVal<std::string>("outDir") },
                                            parallel { confP.getVal<bool>("parallel") },
+                                           threaded { confP.getVal<bool>("threaded") },
                                            timeStep { confP.getVal<double>("timeStep") },
                                            timeEnd { confP.getVal<double>("timeEnd") },
                                            h5DumpInterval { confP.getVal<int>("h5DumpInterval") },
-                                           loadBalancingInterval { confP.getVal<int>("loadBalancingInterval") }
+                                           loadBalancingInterval { confP.getVal<int>("loadBalancingInterval") },
+                                           traceMaterial { confP.getVal<bool>("traceMaterial") }
 {
     numProcs = comm.size();
     myRank = comm.rank();
 
     Logger(INFO) << "Reading in initial distribution ...";
-    InitialDistribution initDist { initFile };
+    InitialDistribution initDist { initFile, traceMaterial };
 
     N = initDist.getNumberOfParticles();
     Logger(INFO) << "... done. Total number of particles N = " << N;
@@ -62,13 +64,19 @@ BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("do
             Logger(WARN) << "Parallel execution on one process is not intended. Use serial mode instead.";
         }
         initDist.getParticles(particles, myRank*particlesPerProc, particlesPerProc);
-        tree = new SubDomainTree(domainSize, confP.getVal<double>("theta"),
-                                 confP.getVal<double>("softening"), timeStep, confP.getVal<bool>("hilbert"));
-
+        if (threaded) {
+            tree = new ThreadedTree(domainSize, confP.getVal<double>("theta"),
+                                    confP.getVal<double>("softening"), timeStep, confP.getVal<bool>("hilbert"));
+        } else {
+            tree = new SubDomainTree(domainSize, confP.getVal<double>("theta"),
+                                     confP.getVal<double>("softening"), timeStep, confP.getVal<bool>("hilbert"));
+        }
     } else if (numProcs == 1){
         initDist.getAllParticles(particles);
         tree = new DomainTree(domainSize, confP.getVal<double>("theta"), confP.getVal<double>("softening"), timeStep);
-
+        if (threaded){
+            Logger(WARN) << "Threading is not yet implemented for serial mode. Use parallel mode instead.";
+        }
     } else {
         Logger(ERROR) << "Serial execution with more than one process is not possible. Aborting.";
         throw std::invalid_argument("Serial execution must not use more than one process.");
@@ -159,8 +167,9 @@ void BarnesHut::run(){
             HighFive::DataSet xDataSet = h5File.createDataSet<double>("/x", HighFive::DataSpace(dataSpaceDims));
             HighFive::DataSet vDataSet = h5File.createDataSet<double>("/v", HighFive::DataSpace(dataSpaceDims));
             HighFive::DataSet kDataSet = h5File.createDataSet<keytype>("/key", HighFive::DataSpace(N));
+            HighFive::DataSet matDataSet = h5File.createDataSet<int>("/materialId", HighFive::DataSpace(N));
 
-            tree->dump2file(mDataSet, xDataSet, vDataSet, kDataSet);
+            tree->dump2file(mDataSet, xDataSet, vDataSet, kDataSet, matDataSet, traceMaterial);
             Logger(INFO) << "... done.";
         }
 

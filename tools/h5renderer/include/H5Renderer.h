@@ -23,6 +23,7 @@ struct ColorRGB {
     char b;
 
     ColorRGB() : r { 0 }, g { 0 }, b { 0 }{};
+    //ColorRGB() : r { ~0 }, g { ~0 }, b { ~0 }{};
     ColorRGB(char _r, char _g, char _b) : r { _r }, g { _g }, b { _b }{};
 };
 
@@ -37,7 +38,8 @@ const ColorRGB COLORS[10] = {
         ColorRGB(0, ~0, ~0), // turquoise
         ColorRGB(~0, 127, 0), //orange
         ColorRGB(127, 127, 127), // grey
-        ColorRGB(~0, ~0, ~0) //white
+        //ColorRGB(~0, ~0, ~0) //white
+        ColorRGB(0, 0, 0) // black
 };
 
 class H5Renderer {
@@ -50,6 +52,7 @@ private:
     const int imgHeight;
     const double zoom;
     const bool crosses;
+    std::string icFile;
 
     // constants
     static constexpr double SCALE2FIT { .95 };
@@ -57,6 +60,7 @@ private:
     // internal variables
     std::vector<fs::path> h5files;
     long psSize; // pixelSpace size
+    bool materialMode { false };
 
     //functions
     ColorRGB procColor(unsigned long k, const std::vector<unsigned long> &ranges);
@@ -68,7 +72,7 @@ private:
 
 public:
     H5Renderer(std::string _h5folder, double _domainSize, int _imgHeight, double _zoom, bool _crosses,
-               bool _processColoring=true);
+               std::string _icFile, bool _materialMode, bool _processColoring=true);
 
     void createImages(std::string outDir);
 };

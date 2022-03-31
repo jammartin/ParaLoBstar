@@ -21,7 +21,7 @@ public:
     void compPseudoParticles() override;
     void compForce() override;
     void dump2file(HighFive::DataSet &mDataSet, HighFive::DataSet &xDataSet, HighFive::DataSet &vDataSet,
-                   HighFive::DataSet &kDataSet) override;
+                   HighFive::DataSet &kDataSet, HighFive::DataSet &matDataSet, int traceMaterial) override;
     void guessRanges() override;
     void newLoadDistribution() override;
     void getRanges(std::vector<keytype> &ranges) override;
@@ -30,10 +30,15 @@ public:
     double totalEnergy() override;
     void angularMomentum(std::vector<double> &L) override;
 
+protected:
+    int myRank;
+    keytype (*getKey)(keytype, int){ &Lebesgue };
+    virtual void compForce(TreeNode &t, keytype k, int lvl);
+    int key2proc(keytype k);
+
 private:
     mpi::communicator comm;
     int numProcs;
-    int myRank;
     keytype *range;
 
     static constexpr int mpiTag { 17 }; // arbitrary tag
@@ -44,7 +49,6 @@ private:
     bool hilbertFlag { false };
     static keytype Lebesgue(keytype k_, int _){ return k_; }
     static keytype Lebesgue2Hilbert(keytype lebesgue, int level);
-    keytype (*getKey)(keytype, int){ &Lebesgue };
     static std::string key2str(const keytype &key);
 
     void insertSubTree(Particle &p, TreeNode &t);
@@ -53,12 +57,10 @@ private:
     void particles2sendByTheta(std::map<keytype, Particle> *&particles2send, TreeNode &t, keytype k, int lvl);
     void particles2sendByTheta(TreeNode &cc, std::map<keytype, Particle> &particles4proc, TreeNode &t,
                                double l, keytype k);
-    void compForce(TreeNode &t, keytype k, int lvl);
     void guessRanges(int &maxLvl, int &pCounter, int &rangeIndex, TreeNode &t, keytype k, int lvl);
     void sendParticles();
     void buildCommonCoarseTree();
     void updateRanges(int &myDistr, int &rangeIndex, int newDistribution[], TreeNode &t, keytype k, int lvl);
-    int key2proc(keytype k);
     void fillSendVectors(std::vector<Particle> *&particles2send, TreeNode &t, keytype k, int lvl);
     int particleExchange(std::vector<Particle> *&particles2send, Particle *&particles2receive);
     void buildCommonCoarseTree(TreeNode &t, keytype k, int lvl);
@@ -66,7 +68,8 @@ private:
     void getParticleData(std::vector<double> &m,
                          std::vector<std::vector<double>> &x,
                          std::vector<std::vector<double>> &v,
-                         std::vector<keytype> &keys, TreeNode &t, keytype k, int lvl);
+                         std::vector<keytype> &keys,
+                         std::vector<int> &matIds, TreeNode &t, keytype k, int lvl);
 
 };
 

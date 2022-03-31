@@ -14,6 +14,7 @@
 #include "Particle.h"
 #include "DomainTree.h"
 #include "SubDomainTree.h"
+#include "ThreadedTree.h"
 
 class BarnesHut {
 public:
@@ -28,10 +29,12 @@ private:
     std::string initFile;
     std::string outDir;
     bool parallel;
+    bool threaded;
     double timeStep;
     double timeEnd;
     int h5DumpInterval;
     int loadBalancingInterval;
+    bool traceMaterial;
 
     // mpi related variables
     mpi::communicator comm;

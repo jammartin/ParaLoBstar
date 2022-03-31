@@ -267,14 +267,15 @@ void Tree::getCenterOfMass(std::vector<double> &com){
 }
 
 void Tree::deallocate(TreeNode &t){
-    for(int i=0; i<global::powdim; ++i){
+    for (int i=0; i<global::powdim; ++i){
         if (t.son[i] != nullptr){
-            if (t.son[i]->isLeaf()){
-                delete t.son[i];
-                t.son[i] = nullptr;
-            } else {
-                deallocate(*t.son[i]);
-            }
+            deallocate(*t.son[i]);
+        }
+    }
+    for (int i=0; i<global::powdim; ++i){
+        if (t.son[i] != nullptr && t.son[i]->isLeaf()){
+            delete t.son[i];
+            t.son[i] = nullptr;
         }
     }
 }

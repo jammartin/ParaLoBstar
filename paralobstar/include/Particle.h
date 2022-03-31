@@ -18,6 +18,7 @@ public:
     double v[global::dim] {}; // velocity
     double F[global::dim] {}; // force
     double Fn[global::dim] {}; // force last time step
+    int materialId { 0 }; // material ID
     bool toDelete { false };
     bool moved { false };
     double U { 0. }; // gravitational energy
@@ -37,6 +38,7 @@ private:
         ar & v;
         ar & F;
         ar & Fn;
+        ar &materialId;
         ar & toDelete;
         ar & moved;
         ar & U;

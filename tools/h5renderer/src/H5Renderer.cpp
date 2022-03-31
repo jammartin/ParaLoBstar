@@ -1,30 +1,36 @@
 #include "../include/H5Renderer.h"
 
 H5Renderer::H5Renderer(std::string _h5folder, double _domainSize, int _imgHeight, double _zoom, bool _crosses,
-                       bool _processColoring) :
+                       std::string _icFile, bool _materialMode, bool _processColoring) :
 h5folder { _h5folder }, domainSize { _domainSize }, imgHeight { _imgHeight }, zoom { _zoom }, crosses { _crosses },
-h5files { std::vector<fs::path>() }
+icFile { _icFile }, materialMode {_materialMode}, h5files { std::vector<fs::path>() }
 {
-    // gather files found at h5folder
-    fs::path h5path ( h5folder );
-    if( !fs::exists(h5path) ){
-        Logger(ERROR) << "Bad provided path for 'h5folder/*.h5': '" << h5folder << "' doesn't exist.";
-    } else if ( !fs::is_directory(h5path) ){
-        Logger(ERROR) << "Bad provided path for 'h5folder/*.h5': '" << h5folder << "' is not a directory.";
-    } else {
-        Logger(INFO) << "Collecting h5 files from '" << h5folder << "' ...";
-        fs::directory_iterator endDirIt; // empty iterator serves as end
-        fs::directory_iterator dirIt(h5path);
-        while (dirIt != endDirIt){
-            // TODO: also allow .hdf, .hdf5 etc.
-            if(fs::extension(dirIt->path()) == ".h5"){
-                // collect h5files in h5folder dir in container
-                h5files.push_back(dirIt->path());
-                Logger(INFO) << "Found " << dirIt->path().filename();
+    if (icFile.empty()) {
+        // gather files found at h5folder
+        fs::path h5path ( h5folder );
+        if( !fs::exists(h5path) ){
+            Logger(ERROR) << "Bad provided path for 'h5folder/*.h5': '" << h5folder << "' doesn't exist.";
+        } else if ( !fs::is_directory(h5path) ){
+            Logger(ERROR) << "Bad provided path for 'h5folder/*.h5': '" << h5folder << "' is not a directory.";
+        } else {
+            Logger(INFO) << "Collecting h5 files from '" << h5folder << "' ...";
+            fs::directory_iterator endDirIt; // empty iterator serves as end
+            fs::directory_iterator dirIt(h5path);
+            while (dirIt != endDirIt){
+                // TODO: also allow .hdf, .hdf5 etc.
+                if(fs::extension(dirIt->path()) == ".h5"){
+                    // collect h5files in h5folder dir in container
+                    h5files.push_back(dirIt->path());
+                    Logger(INFO) << "Found " << dirIt->path().filename();
+                }
+                ++dirIt;
             }
-            ++dirIt;
+            Logger(INFO) << "... done.";
         }
-        Logger(INFO) << "... done.";
+    } else {
+        Logger(INFO) << "Attempting to open initial conditions file '" << icFile << "'";
+        h5files.push_back(icFile);
+        materialMode = true;
     }
 
     // initialize pixelspace size
@@ -42,6 +48,7 @@ void H5Renderer::createImages(std::string outDir){
         // initialize data structures
         std::vector<unsigned long> ranges;      
         std::vector<unsigned long> k;
+        std::vector<int> matId;
         std::vector<std::vector<double>> x; // container for particle positions
 
         Logger(INFO) << "Reading " << h5PathIt->filename() << " ...";
@@ -53,17 +60,20 @@ void H5Renderer::createImages(std::string outDir){
 	{
 	HighFive::File file(h5PathIt->string(), HighFive::File::ReadOnly);
 	Logger(DEBUG) << "    file opened.";
-	
 
-        // reading process ranges
-        HighFive::DataSet rng = file.getDataSet("/ranges");
+        if (!materialMode){
+            // reading process ranges
+            HighFive::DataSet rng = file.getDataSet("/ranges");
+            rng.read(ranges);
 
-	rng.read(ranges);
-
-        // reading particle keys
-        HighFive::DataSet key = file.getDataSet("/key");
-
-        key.read(k);
+            // reading particle keys
+            HighFive::DataSet key = file.getDataSet("/key");
+            key.read(k);
+        } else {
+            // reading material IDs
+            HighFive::DataSet materialId = file.getDataSet("/materialId");
+            materialId.read(matId);
+        }
 
         // reading particle positions
         HighFive::DataSet pos = file.getDataSet("/x");
@@ -75,7 +85,12 @@ void H5Renderer::createImages(std::string outDir){
         std::vector<Particle> particles {};
 
         for (int i = 0; i < x.size(); ++i) {
-            particles.push_back(Particle(x[i][0], x[i][1], x[i][2], k[i]));
+            if (materialMode){
+                particles.push_back(Particle(x[i][0], x[i][1], x[i][2], 0UL, matId[i])); // dummy key
+            } else {
+                // process coloring mode is the default
+                particles.push_back(Particle(x[i][0], x[i][1], x[i][2], k[i]));
+            }
         }
         Logger(DEBUG) << "    ... done.";
 
@@ -89,9 +104,13 @@ void H5Renderer::createImages(std::string outDir){
         Logger(DEBUG) << "    Sorting by z-coordinate ...";
         std::sort(particles.rbegin(), particles.rend(), Particle::zComp); // using reverse iterator
         Logger(DEBUG) << "    ... drawing pixels in x-y-plane ...";
+
+        ColorRGB color;
         // looping through particles in decreasing z-order
         for (int i = 0; i < particles.size(); ++i) {
-            ColorRGB color = procColor(particles[i].key, ranges);
+
+            color = materialMode ? COLORS[particles[i].matId] : procColor(particles[i].key, ranges);
+
             if (crosses){
                 for (int ii=-10; ii<10; ii++) {
                     particle2PixelXY(particles[i].x + ii*0.01, particles[i].y, color, pixelSpace);
@@ -108,7 +127,9 @@ void H5Renderer::createImages(std::string outDir){
         Logger(DEBUG) << "    ... drawing pixels in x-z-plane ...";
         // looping through particles in increasing y-order
         for (int i = 0; i < particles.size(); ++i) {
-            ColorRGB color = procColor(particles[i].key, ranges);
+
+            color = materialMode ? COLORS[particles[i].matId] : procColor(particles[i].key, ranges);
+
             if (crosses){
                 for (int ii=-10; ii<10; ii++) {
                     particle2PixelXZ(particles[i].x + ii*0.01, particles[i].z, color, pixelSpace);
@@ -126,7 +147,7 @@ void H5Renderer::createImages(std::string outDir){
         pixelSpace2File(outFile, pixelSpace);
 
         Logger(DEBUG) << "  Deleting pixel space.";
-	delete[] pixelSpace;
+	    delete[] pixelSpace;
 
         Logger(INFO) << "... done. Results written to '" << outFile << "'.";
     }
