@@ -75,7 +75,7 @@ BarnesHut::BarnesHut(ConfigParser confP) : domainSize { confP.getVal<double>("do
         initDist.getAllParticles(particles);
         tree = new DomainTree(domainSize, confP.getVal<double>("theta"), confP.getVal<double>("softening"), timeStep);
         if (threaded){
-            Logger(WARN) << "Threading is not yet implemented for serial mode. Use parallel mode instead.";
+            Logger(ERROR) << "Threading is not yet implemented for serial mode. Use parallel mode instead.";
         }
     } else {
         Logger(ERROR) << "Serial execution with more than one process is not possible. Aborting.";

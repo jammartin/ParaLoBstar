@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
             ("o,output", "Write result files to given path", cxxopts::value<std::string>()->default_value("./output"))
             ("z,zoom", "Zoom in factor to show more details", cxxopts::value<double>()->default_value("1"))
             ("x,crosses", "Draw crosses instead of pixels")
-            ("i,ic-file", "Render initial conditions from file", cxxopts::value<std::string>()->implicit_value("ic.h5"))
+            ("i,ic-file", "Render initial conditions from file", cxxopts::value<std::string>()->default_value("ic.h5"))
             ("h,help", "Show this help");
 
     // read and store options provided
